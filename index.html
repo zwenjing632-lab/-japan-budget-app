@@ -61,6 +61,11 @@
     .day-date{font-size:14px}
     .day-total{font-size:13px;color:#c62828}
     .day-count{font-size:11px;color:#888;font-weight:500;margin-left:6px}
+    .item-actions{display:flex;align-items:center;gap:8px}
+    .delete-one{
+      width:auto;padding:7px 9px;border-radius:9px;
+      background:#fff0f0;color:#b00020;font-size:12px;font-weight:700
+    }
 
     @media(max-width:520px){
       .chart-wrap{grid-template-columns:1fr}
@@ -314,9 +319,12 @@ function renderGroupedList(){
           <div><span class="pill">${r.category}</span>${r.note||''}</div>
           <div class="meta">${new Date(r.ts).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div class="${r.type==='expense'?'neg':'pos'}">
-          ${r.type==='expense'?'-':'+'}${money(cny(r.amount,r.currency))}
-          <div class="meta">${money(jpy(r.amount,r.currency))} 日元</div>
+        <div class="item-actions">
+          <div class="${r.type==='expense'?'neg':'pos'}">
+            ${r.type==='expense'?'-':'+'}${money(cny(r.amount,r.currency))}
+            <div class="meta">${money(jpy(r.amount,r.currency))} 日元</div>
+          </div>
+          <button class="delete-one" data-id="${r.id}">删除</button>
         </div>`;
       dayGroup.appendChild(div);
     });
@@ -415,6 +423,21 @@ $('redoBtn').onclick=()=>{
 $('filterAll').onclick=()=>{filter='all';render()};
 $('filterExpense').onclick=()=>{filter='expense';render()};
 $('filterIncome').onclick=()=>{filter='income';render()};
+
+
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.delete-one');
+  if(!btn)return;
+  const id=btn.dataset.id;
+  const rec=records.find(r=>r.id===id);
+  if(!rec)return;
+  if(!confirm(`确定删除这笔记录吗？\n${rec.category} · ${money(cny(rec.amount,rec.currency))}`))return;
+  records=records.filter(r=>r.id!==id);
+  persistRecords();
+  if(undoRecord?.id===id) undoRecord=null;
+  if(redoRecord?.id===id) redoRecord=null;
+  render();
+});
 
 $('clearBtn').onclick=()=>{
   if(confirm('确定清空全部记账记录吗？')){
