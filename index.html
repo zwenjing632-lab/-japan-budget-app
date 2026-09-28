@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>日本留学记账</title>
+  <style>
+    :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:#111;background:#f6f7f9}
+    *{box-sizing:border-box} body{margin:0;padding:16px;max-width:760px;margin-inline:auto} h1{font-size:24px;margin:8px 0 4px}.sub{color:#666;font-size:13px;margin-bottom:16px}
+    .card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+    label{font-size:13px;color:#555;display:block;margin-bottom:6px} input,select,button{width:100%;font:inherit;border:1px solid #ddd;border-radius:12px;padding:12px;background:#fff}
+    button{border:none;background:#111;color:#fff;font-weight:700}.row{display:flex;gap:10px}.row>*{flex:1}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:#f7f7f8;border-radius:14px;padding:12px}.stat b{display:block;font-size:20px;margin-top:4px}
+    .warn{padding:12px;border-radius:12px;background:#fff4e5;color:#8a4b00;font-size:14px}.ok{padding:12px;border-radius:12px;background:#eef8ef;color:#246b2a;font-size:14px}
+    .list{display:flex;flex-direction:column;gap:10px}.item{display:flex;justify-content:space-between;gap:10px;padding:12px;border:1px solid #eee;border-radius:12px}.neg{color:#c62828}.pos{color:#2e7d32}.meta{font-size:12px;color:#777}.pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#f0f1f3;font-size:11px;margin-right:5px}
+    .tiny{font-size:12px;color:#777}.danger{background:#b00020}.ghost{background:#eceff3;color:#111}.footer{font-size:12px;color:#888;text-align:center;padding:14px 0 30px}
+  </style>
+</head>
+<body>
+  <h1>日本留学记账</h1>
+  <div class="sub">本地保存 · 手机优先 · 人民币/日元双币显示</div>
+
+  <section class="card">
+    <div class="grid">
+      <div>
+        <label>每月总预算（人民币）</label>
+        <input id="budget" type="number" value="4000" min="0" />
+      </div>
+      <div>
+        <label>水电煤气预算（人民币）</label>
+        <input id="utilitiesBudget" type="number" value="1000" min="0" />
+      </div>
+      <div>
+        <label>生活预算（人民币）</label>
+        <input id="livingBudget" type="number" value="3000" min="0" />
+      </div>
+      <div>
+        <label>汇率：1 人民币 = ? 日元</label>
+        <input id="rate" type="number" value="20.5" step="0.01" min="0.01" />
+      </div>
+    </div>
+    <div class="tiny" style="margin-top:8px">汇率可随时手动修改；所有金额都会自动换算。</div>
+  </section>
+
+  <section class="card">
+    <div class="grid">
+      <div>
+        <label>类型</label>
+        <select id="type"><option value="expense">支出</option><option value="income">收入</option></select>
+      </div>
+      <div>
+        <label>币种</label>
+        <select id="currency"><option value="JPY">日元</option><option value="CNY">人民币</option></select>
+      </div>
+      <div>
+        <label>金额</label>
+        <input id="amount" type="number" inputmode="decimal" placeholder="例如 1280" />
+      </div>
+      <div>
+        <label>分类</label>
+        <select id="category">
+          <option>餐饮</option><option>交通</option><option>日用品</option><option>购物</option><option>水电煤气</option><option>住宿</option><option>学习</option><option>娱乐</option><option>其他</option>
+        </select>
+      </div>
+      <div class="full">
+        <label>备注</label>
+        <input id="note" placeholder="例如：超市、公交、电话费" />
+      </div>
+      <div class="full"><button id="addBtn">添加记录</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="stats">
+      <div class="stat"><span>本月收入</span><b id="incomeSum">¥0</b><small id="incomeJPY">¥0 日元</small></div>
+      <div class="stat"><span>本月支出</span><b id="expenseSum">¥0</b><small id="expenseJPY">¥0 日元</small></div>
+      <div class="stat"><span>余额</span><b id="balance">¥0</b><small id="balanceJPY">¥0 日元</small></div>
+      <div class="stat"><span>今日建议可花</span><b id="dailyLeft">¥0</b><small id="dailyLeftJPY">¥0 日元</small></div>
+    </div>
+    <div id="warningBox" style="margin-top:12px"></div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <button class="ghost" id="filterAll">全部</button>
+      <button class="ghost" id="filterExpense">支出</button>
+      <button class="ghost" id="filterIncome">收入</button>
+    </div>
+    <div class="list" id="list" style="margin-top:12px"></div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <button class="ghost" id="exportBtn">导出数据</button>
+      <button class="danger" id="clearBtn">清空记录</button>
+    </div>
+  </section>
+
+  <div class="footer">数据仅保存在当前浏览器的本地存储中。</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const KEYS={records:'jpBudget_records',settings:'jpBudget_settings'};
+let filter='all';
+let records=JSON.parse(localStorage.getItem(KEYS.records)||'[]');
+let settings=Object.assign({budget:4000,utilitiesBudget:1000,livingBudget:3000,rate:20.5},JSON.parse(localStorage.getItem(KEYS.settings)||'{}'));
+function saveSettings(){settings={budget:+$('budget').value||0,utilitiesBudget:+$('utilitiesBudget').value||0,livingBudget:+$('livingBudget').value||0,rate:+$('rate').value||20.5};localStorage.setItem(KEYS.settings,JSON.stringify(settings));render();}
+['budget','utilitiesBudget','livingBudget','rate'].forEach(id=>$(id).addEventListener('input',saveSettings));
+function cny(v,currency){return currency==='CNY'?v:v/settings.rate}
+function jpy(v,currency){return currency==='JPY'?v:v*settings.rate}
+function money(n){return '¥'+Math.round(n).toLocaleString('zh-CN')}
+function monthKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function render(){
+ $('budget').value=settings.budget;$('utilitiesBudget').value=settings.utilitiesBudget;$('livingBudget').value=settings.livingBudget;$('rate').value=settings.rate;
+ const mk=monthKey(); const month=records.filter(r=>r.date.startsWith(mk));
+ const inc=month.filter(r=>r.type==='income').reduce((s,r)=>s+cny(r.amount,r.currency),0);
+ const exp=month.filter(r=>r.type==='expense').reduce((s,r)=>s+cny(r.amount,r.currency),0);
+ const bal=inc-exp; const now=new Date(); const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(); const remainDays=Math.max(1,days-now.getDate()+1); const budgetLeft=Math.max(0,settings.budget-exp); const daily=budgetLeft/remainDays;
+ $('incomeSum').textContent=money(inc);$('incomeJPY').textContent=money(inc*settings.rate)+' 日元';
+ $('expenseSum').textContent=money(exp);$('expenseJPY').textContent=money(exp*settings.rate)+' 日元';
+ $('balance').textContent=money(bal);$('balanceJPY').textContent=money(bal*settings.rate)+' 日元';
+ $('dailyLeft').textContent=money(daily);$('dailyLeftJPY').textContent=money(daily*settings.rate)+' 日元';
+ const util=month.filter(r=>r.type==='expense'&&r.category==='水电煤气').reduce((s,r)=>s+cny(r.amount,r.currency),0);
+ const living=month.filter(r=>r.type==='expense'&&r.category!=='水电煤气').reduce((s,r)=>s+cny(r.amount,r.currency),0);
+ let msg=''; let cls='ok';
+ if(exp>settings.budget){msg=`本月已超总预算 ${money(exp-settings.budget)}。`;cls='warn'}
+ else if(util>settings.utilitiesBudget){msg=`水电煤气已超预算 ${money(util-settings.utilitiesBudget)}。`;cls='warn'}
+ else if(living>settings.livingBudget){msg=`生活开支已超预算 ${money(living-settings.livingBudget)}。`;cls='warn'}
+ else {msg=`本月剩余预算 ${money(settings.budget-exp)}，按剩余 ${remainDays} 天计算，今天建议控制在 ${money(daily)} 左右。`}
+ $('warningBox').className=cls;$('warningBox').textContent=msg;
+ const show=records.filter(r=>filter==='all'||r.type===filter).sort((a,b)=>b.ts-a.ts); const list=$('list'); list.innerHTML='';
+ if(!show.length){list.innerHTML='<div class="tiny">还没有记录。</div>'}
+ show.forEach(r=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><div><span class="pill">${r.category}</span>${r.note||''}</div><div class="meta">${new Date(r.ts).toLocaleString('zh-CN')}</div></div><div class="${r.type==='expense'?'neg':'pos'}">${r.type==='expense'?'-':'+'}${money(cny(r.amount,r.currency))}<div class="meta">${money(jpy(r.amount,r.currency))} 日元</div></div>`;list.appendChild(div)});
+}
+$('addBtn').onclick=()=>{const amount=+$('amount').value;if(!amount){alert('请输入金额');return}records.push({id:crypto.randomUUID?.()||String(Date.now()),type:$('type').value,currency:$('currency').value,amount,category:$('category').value,note:$('note').value.trim(),date:new Date().toISOString().slice(0,10),ts:Date.now()});localStorage.setItem(KEYS.records,JSON.stringify(records));$('amount').value='';$('note').value='';render()}
+$('filterAll').onclick=()=>{filter='all';render()};$('filterExpense').onclick=()=>{filter='expense';render()};$('filterIncome').onclick=()=>{filter='income';render()};
+$('clearBtn').onclick=()=>{if(confirm('确定清空全部记账记录吗？')){records=[];localStorage.removeItem(KEYS.records);render()}}
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({settings,records},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='japan-budget-data.json';a.click();URL.revokeObjectURL(a.href)}
+render();
+</script>
+</body>
+</html>
