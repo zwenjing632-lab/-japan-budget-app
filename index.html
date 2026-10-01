@@ -340,7 +340,7 @@ function render(){
   $('rate').value=settings.rate;
 
   const mk=monthKey();
-  const month=records.filter(r=>r.date.startsWith(mk));
+  const month=records.filter(r=>(r.date || localDateString(new Date(r.ts))).startsWith(mk));
   const inc=month.filter(r=>r.type==='income').reduce((s,r)=>s+cny(r.amount,r.currency),0);
   const exp=month.filter(r=>r.type==='expense').reduce((s,r)=>s+cny(r.amount,r.currency),0);
   const bal=inc-exp;
