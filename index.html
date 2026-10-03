@@ -136,9 +136,11 @@
   <section class="card">
     <div class="stats">
       <div class="stat"><span>本月收入</span><b id="incomeSum">¥0</b><small id="incomeJPY">¥0 日元</small></div>
-      <div class="stat"><span>本月支出</span><b id="expenseSum">¥0</b><small id="expenseJPY">¥0 日元</small></div>
+      <div class="stat"><span>本月总支出</span><b id="expenseSum">¥0</b><small id="expenseJPY">¥0 日元</small></div>
+      <div class="stat"><span>生活支出</span><b id="livingSum">¥0</b><small id="livingJPY">¥0 日元</small></div>
+      <div class="stat"><span>水电煤气支出</span><b id="utilitiesSum">¥0</b><small id="utilitiesJPY">¥0 日元</small></div>
       <div class="stat"><span>余额</span><b id="balance">¥0</b><small id="balanceJPY">¥0 日元</small></div>
-      <div class="stat"><span>今日建议可花</span><b id="dailyLeft">¥0</b><small id="dailyLeftJPY">¥0 日元</small></div>
+      <div class="stat"><span>今日建议可花（生活费）</span><b id="dailyLeft">¥0</b><small id="dailyLeftJPY">¥0 日元</small></div>
     </div>
     <div id="warningBox" style="margin-top:12px"></div>
   </section>
@@ -343,32 +345,42 @@ function render(){
   const month=records.filter(r=>(r.date || localDateString(new Date(r.ts))).startsWith(mk));
   const inc=month.filter(r=>r.type==='income').reduce((s,r)=>s+cny(r.amount,r.currency),0);
   const exp=month.filter(r=>r.type==='expense').reduce((s,r)=>s+cny(r.amount,r.currency),0);
-  const bal=inc-exp;
-  const now=new Date();
-  const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  const remainDays=Math.max(1,days-now.getDate()+1);
-  const budgetLeft=Math.max(0,settings.budget-exp);
-  const daily=budgetLeft/remainDays;
-
-  $('incomeSum').textContent=money(inc);
-  $('incomeJPY').textContent=money(inc*settings.rate)+' 日元';
-  $('expenseSum').textContent=money(exp);
-  $('expenseJPY').textContent=money(exp*settings.rate)+' 日元';
-  $('balance').textContent=money(bal);
-  $('balanceJPY').textContent=money(bal*settings.rate)+' 日元';
-  $('dailyLeft').textContent=money(daily);
-  $('dailyLeftJPY').textContent=money(daily*settings.rate)+' 日元';
 
   const util=month.filter(r=>r.type==='expense'&&r.category==='水电煤气')
     .reduce((s,r)=>s+cny(r.amount,r.currency),0);
   const living=month.filter(r=>r.type==='expense'&&r.category!=='水电煤气')
     .reduce((s,r)=>s+cny(r.amount,r.currency),0);
 
+  const bal=inc-exp;
+  const now=new Date();
+  const days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const remainDays=Math.max(1,days-now.getDate()+1);
+
+  // 今日建议可花只按“生活预算”计算，水电煤气完全独立。
+  const livingBudgetLeft=Math.max(0,settings.livingBudget-living);
+  const daily=livingBudgetLeft/remainDays;
+
+  $('incomeSum').textContent=money(inc);
+  $('incomeJPY').textContent=money(inc*settings.rate)+' 日元';
+  $('expenseSum').textContent=money(exp);
+  $('expenseJPY').textContent=money(exp*settings.rate)+' 日元';
+  $('livingSum').textContent=money(living);
+  $('livingJPY').textContent=money(living*settings.rate)+' 日元';
+  $('utilitiesSum').textContent=money(util);
+  $('utilitiesJPY').textContent=money(util*settings.rate)+' 日元';
+  $('balance').textContent=money(bal);
+  $('balanceJPY').textContent=money(bal*settings.rate)+' 日元';
+  $('dailyLeft').textContent=money(daily);
+  $('dailyLeftJPY').textContent=money(daily*settings.rate)+' 日元';
+
   let msg=''; let cls='ok';
   if(exp>settings.budget){msg=`本月已超总预算 ${money(exp-settings.budget)}。`;cls='warn'}
   else if(util>settings.utilitiesBudget){msg=`水电煤气已超预算 ${money(util-settings.utilitiesBudget)}。`;cls='warn'}
   else if(living>settings.livingBudget){msg=`生活开支已超预算 ${money(living-settings.livingBudget)}。`;cls='warn'}
-  else {msg=`本月剩余预算 ${money(settings.budget-exp)}，按剩余 ${remainDays} 天计算，今天建议控制在 ${money(daily)} 左右。`}
+  else {
+    const utilLeft=Math.max(0,settings.utilitiesBudget-util);
+    msg=`生活预算剩余 ${money(livingBudgetLeft)}，按剩余 ${remainDays} 天计算，今天生活费建议控制在 ${money(daily)} 左右。水电煤气预算剩余 ${money(utilLeft)}（不计入今日建议可花）。`
+  }
   $('warningBox').className=cls;
   $('warningBox').textContent=msg;
 
@@ -423,7 +435,6 @@ $('redoBtn').onclick=()=>{
 $('filterAll').onclick=()=>{filter='all';render()};
 $('filterExpense').onclick=()=>{filter='expense';render()};
 $('filterIncome').onclick=()=>{filter='income';render()};
-
 
 document.addEventListener('click',e=>{
   const btn=e.target.closest('.delete-one');
