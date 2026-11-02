@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f6f7f9">
+<title>日本生活支出记账</title>
+<style>
+:root{
+  --bg:#f6f7f9;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+  --green:#16a34a;--red:#dc2626;--orange:#d97706;--accent:#111827;--blue:#2563eb;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+-webkit-font-smoothing:antialiased}
+.app{width:min(100%,580px);margin:0 auto;padding:16px 12px calc(30px + env(safe-area-inset-bottom))}
+h1{font-size:24px;margin:4px 2px 14px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 6px 24px rgba(15,23,42,.05);border:1px solid rgba(0,0,0,.04)}
+.summary,.budget,.form-card,.records,.settings{padding:16px;margin-bottom:12px}
+.small{font-size:12px;color:var(--muted)}
+.balance{font-size:33px;font-weight:800;letter-spacing:-1px;margin:4px 0 15px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:13px;padding:10px}
+.stat span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.stat strong{font-size:15px;display:block;word-break:break-word}
+.green{color:var(--green)}.red{color:var(--red)}.orange{color:var(--orange)}.blue{color:var(--blue)}
+.section-title{font-size:16px;font-weight:750;margin:0 0 12px}
+.alert{border-radius:14px;padding:12px 13px;margin-bottom:12px;font-size:14px;line-height:1.5;background:#ecfdf5;color:#166534}
+.alert.warn{background:#fff7ed;color:#9a3412}.alert.danger{background:#fef2f2;color:#991b1b}
+.progress-wrap{margin:13px 0}.progress-head{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px}
+.progress{height:9px;background:#eef2f7;border-radius:999px;overflow:hidden}.progress-bar{height:100%;background:var(--green);width:0%;transition:width .25s ease}
+.progress-bar.warn{background:var(--orange)}.progress-bar.danger{background:var(--red)}
+.daily-box,.rate-box{background:#f8fafc;border-radius:14px;padding:13px;margin-top:12px}
+.daily-main{font-size:22px;font-weight:800;margin:3px 0}
+.daily-sub,.help{font-size:11px;color:var(--muted);line-height:1.55}
+.rate-line{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.rate-main{font-size:16px;font-weight:750}
+.rate-status{font-size:11px;color:var(--muted);margin-top:4px}
+.type-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:13px;margin-bottom:12px}
+.type-btn{border:0;background:transparent;padding:10px;border-radius:10px;font-size:15px;font-weight:700;color:var(--muted)}
+.type-btn.active{background:#fff;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.field{margin-bottom:12px}label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px 2px}
+input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:13px;padding:13px 14px;font-size:16px;outline:none}
+.add-btn{width:100%;border:0;border-radius:13px;background:var(--accent);color:#fff;padding:13px 16px;font-size:16px;font-weight:750}
+.secondary-btn{border:0;border-radius:10px;background:#eef2f7;color:var(--text);padding:8px 10px;font-size:12px;font-weight:650}
+.records-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.clear-btn{border:0;background:transparent;color:var(--muted);font-size:12px;padding:5px}
+.record-list{list-style:none;padding:0;margin:0}.record-item{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 0;border-bottom:1px solid var(--line)}
+.record-item:last-child{border-bottom:0}.record-note{font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.record-meta{font-size:12px;color:var(--muted)}.record-right{text-align:right}.record-amount{font-size:16px;font-weight:800;margin-bottom:4px}
+.delete-btn{border:0;background:transparent;color:#9ca3af;font-size:12px;padding:0}.empty{text-align:center;color:var(--muted);padding:28px 6px 18px;font-size:14px}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.footer-tip{text-align:center;color:#9ca3af;font-size:11px;margin-top:10px}
+@media(max-width:390px){.grid3{grid-template-columns:1fr 1fr}.grid3 .stat:last-child{grid-column:1/-1}.settings-grid{grid-template-columns:1fr}}
+
+.month-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:13px;margin:12px 0}
+.month-btn{border:0;background:transparent;padding:10px;border-radius:10px;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer}
+.month-btn.active{background:#fff;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.month-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.export-btn{width:100%;border:0;border-radius:12px;background:#eef2f7;color:var(--text);padding:11px 14px;font-size:14px;font-weight:700;margin:4px 0 8px;cursor:pointer}
+
+.month-picker-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin:12px 0}
+.month-picker-row .field{margin:0}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.secondary-action{width:100%;border:0;border-radius:12px;background:#eef2f7;color:var(--text);padding:11px 12px;font-size:14px;font-weight:700;cursor:pointer}
+.danger-action{background:#fef2f2;color:#991b1b}
+.edit-btn{border:0;background:transparent;color:var(--blue);font-size:12px;padding:0 8px 0 0;cursor:pointer}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:flex-end;justify-content:center;z-index:999;padding:12px}
+.modal-backdrop.show{display:flex}
+.modal{width:min(100%,560px);background:#fff;border-radius:20px;padding:16px;box-shadow:0 18px 60px rgba(0,0,0,.22);max-height:90vh;overflow:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-head h3{margin:0;font-size:18px}
+.modal-close{border:0;background:transparent;font-size:24px;line-height:1;color:var(--muted);cursor:pointer}
+.hidden-file{display:none}
+
+.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.dash-card{background:#f8fafc;border-radius:14px;padding:12px}
+.dash-card span{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.dash-card strong{display:block;font-size:19px;line-height:1.2}
+.forecast-note{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45}
+.category-list{display:grid;gap:10px;margin-top:10px}
+.category-row{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center}
+.category-name{font-size:13px;font-weight:650}
+.category-track{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}
+.category-fill{height:100%;background:#64748b;border-radius:999px}
+.category-value{font-size:12px;font-weight:700;white-space:nowrap}
+.security-note{background:#f8fafc;border-radius:12px;padding:10px 12px;font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px}
+
+.cat-budget-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.cat-budget-input{background:#f8fafc;border-radius:12px;padding:10px}
+.cat-budget-input label{font-size:12px;min-height:18px}
+.cat-budget-input input{padding:10px 12px}
+.cat-limit-row{display:grid;gap:5px;padding:9px 0;border-bottom:1px solid var(--line)}
+.cat-limit-header{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.cat-limit-hint{font-size:11px;color:var(--muted)}
+.cat-alert{color:#b45309;font-weight:700}
+.cat-alert.over{color:#b91c1c}
+@media(max-width:380px){.cat-budget-grid{grid-template-columns:1fr}}
+
+.trip-field{display:none}.trip-field.visible{display:block}
+.trip-panels{display:grid;gap:10px;margin-top:12px}.trip-panel{background:#f8fafc;border-radius:14px;padding:12px}
+.trip-panel strong{font-size:15px}.trip-panel .small{margin-top:5px}
+.trip-amount{font-size:20px;font-weight:800;margin-top:5px}
+.trip-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>日本生活支出记账</h1>
+
+<section class="card summary">
+  <div class="small">本月日常支出（不含旅游）</div>
+  <div class="balance red" id="monthExpense">¥0</div>
+  <div class="small">日常预算不包含旅游开支；旅游独立统计和导出。</div>
+  <div class="dash-card" style="margin-top:10px"><span>本月旅游支出（单独计算）</span><strong id="travelMonthDash">¥0</strong></div>
+</section>
+
+<section class="card budget">
+  <h2 class="section-title">今天与本月</h2>
+  <div class="dashboard-grid">
+    <div class="dash-card">
+      <span>今天已花</span>
+      <strong class="red" id="todaySpentDash">¥0</strong>
+    </div>
+    <div class="dash-card">
+      <span>今天建议还能花</span>
+      <strong id="todayRemainDash">¥0</strong>
+    </div>
+    <div class="dash-card">
+      <span>本月生活费剩余</span>
+      <strong id="monthLivingRemainDash">¥0</strong>
+    </div>
+    <div class="dash-card">
+      <span>月底预计支出</span>
+      <strong id="forecastMonthDash">¥0</strong>
+      <div class="forecast-note" id="forecastNote"></div>
+    </div>
+  </div>
+</section>
+
+<section class="card budget">
+  <h2 class="section-title">本月预算预警</h2>
+  <div id="budgetAlert" class="alert">正在计算预算…</div>
+
+  <div class="rate-box">
+    <div class="rate-line">
+      <div>
+        <div class="small">今日预算换算汇率</div>
+        <div class="rate-main" id="rateMain">正在获取…</div>
+      </div>
+      <button class="secondary-btn" id="refreshRateBtn">刷新汇率</button>
+    </div>
+    <div class="rate-status" id="rateStatus"></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-head"><span>生活费</span><strong id="livingProgressText">¥0 / ¥0</strong></div>
+    <div class="progress"><div id="livingProgress" class="progress-bar"></div></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-head"><span>水电煤气</span><strong id="utilityProgressText">¥0 / ¥0</strong></div>
+    <div class="progress"><div id="utilityProgress" class="progress-bar"></div></div>
+  </div>
+
+  <div class="daily-box">
+    <div class="small">今天建议最多再花</div>
+    <div class="daily-main" id="todayRemaining">¥0</div>
+    <div class="daily-sub" id="dailyInfo"></div>
+  </div>
+</section>
+
+<section class="card form-card">
+  <h2 class="section-title">快速记一笔</h2>
+  <div class="field"><label for="amount">金额（日元）</label><input id="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="例如 980"></div>
+  <div class="field" id="categoryField">
+    <label for="category">分类</label>
+    <select id="category">
+      <option value="餐饮">🍱 餐饮</option><option value="交通">🚃 交通</option><option value="日用品">🧴 日用品</option>
+      <option value="娱乐">🎮 娱乐</option><option value="学习">📚 学习</option>
+      <option value="水电煤气">💡 水电煤气</option><option value="其他">📌 其他</option><option value="旅游">🧳 旅游</option>
+    </select>
+  </div>
+  <div class="field trip-field" id="travelProjectField">
+    <label for="travelProject">所属旅行（跨月份累计）</label>
+    <select id="travelProject"></select>
+    <div class="small" style="margin-top:6px">在下方「旅行项目管理」中新建京都旅行、名古屋旅行等项目。</div>
+  </div>
+  <div class="field"><label for="note">备注（可不填）</label><input id="note" type="text" maxlength="40" placeholder="例如 便利店、午饭"></div>
+  <button class="add-btn" id="addBtn">保存记录</button>
+</section>
+
+<section class="card budget">
+  <h2 class="section-title">当月分类支出</h2>
+  <div class="small">根据当前选择的月份自动统计；旅游不占用生活费预算。</div>
+  <div class="category-list" id="categoryBreakdown"></div>
+  <div class="small" style="margin-top:10px">进度条按照你为每项设定的月度上限计算；超过上限显示红色。</div>
+</section>
+
+<section class="card budget">
+  <h2 class="section-title">🧳 旅行项目管理</h2>
+  <div class="field"><label for="newTripName">新建旅行项目</label>
+    <input id="newTripName" maxlength="40" placeholder="例如 京都旅行、名古屋旅行、胜山滑雪">
+  </div>
+  <button class="secondary-action" id="addTripBtn">添加旅行项目</button>
+  <div class="trip-panels" id="tripPanels"></div>
+  <div class="help" style="margin-top:10px">每趟旅行独立累计，即使跨越两个月也会算在同一项目里。旧旅游账单暂归入「未分配旅行」，可通过编辑账单指定项目。</div>
+</section>
+
+<section class="card records">
+  <div class="records-head">
+    <h2 class="section-title" style="margin:0">支出记录</h2>
+    <button class="clear-btn" id="clearBtn">清空当前月</button>
+  </div>
+
+  <div class="month-picker-row">
+    <div class="field">
+      <label for="monthPicker">选择月份</label>
+      <input id="monthPicker" type="month">
+    </div>
+    <button class="secondary-btn" id="jumpCurrentMonthBtn">回到本月</button>
+  </div>
+
+  <div class="month-summary">
+    <div class="stat">
+      <span>当前月份</span>
+      <strong id="selectedMonthLabel">—</strong>
+    </div>
+    <div class="stat">
+      <span>当月日常支出</span>
+      <strong class="red" id="selectedMonthExpense">¥0</strong>
+    </div>
+  </div>
+
+  <div class="dash-card" style="margin-bottom:10px"><span>所选月份旅游支出</span><strong id="travelSelectedDash">¥0</strong></div>
+  <button class="export-btn" id="exportMonthBtn">导出当月全部支出 CSV</button>
+  <button class="export-btn" id="exportTravelBtn">单独导出当月旅游 CSV</button>
+
+  <ul class="record-list" id="recordList"></ul>
+  <div class="empty" id="emptyState">这个月还没有记录。</div>
+</section>
+
+
+<section class="card settings">
+  <h2 class="section-title">数据备份与恢复</h2>
+  <div class="help" style="margin-bottom:10px">
+    CSV 适合查看账单；JSON 备份会保存全部账单、预算设置和汇率设置，换手机或清除浏览器数据后可用于恢复。
+  </div>
+  <div class="action-row">
+    <button class="secondary-action" id="backupJsonBtn">导出完整备份</button>
+    <button class="secondary-action" id="importJsonBtn">导入备份</button>
+  </div>
+  <input class="hidden-file" id="importJsonFile" type="file" accept=".json,application/json">
+  <div class="security-note">建议每月底导出一次完整 JSON 备份。CSV 只用于查看和表格分析，JSON 才适合完整恢复。</div>
+</section>
+
+<section class="card settings">
+  <h2 class="section-title">预算设置</h2>
+  <div class="settings-grid">
+    <div class="field"><label for="livingBudgetCny">生活费预算（人民币）</label><input id="livingBudgetCny" type="number" min="0" step="100" value="3000"></div>
+    <div class="field"><label for="utilityBudgetCny">水电煤气预算（人民币）</label><input id="utilityBudgetCny" type="number" min="0" step="100" value="1000"></div>
+    <div class="field"><label for="warnPercent">预警线（%）</label><input id="warnPercent" type="number" min="50" max="100" step="1" value="80"></div>
+    <div class="field">
+      <label for="fxMode">汇率模式</label>
+      <select id="fxMode">
+        <option value="auto">自动获取每日汇率</option>
+        <option value="manual">手动设置汇率</option>
+      </select>
+    </div>
+    <div class="field" id="manualRateField">
+      <label for="manualRate">手动汇率：1 元人民币 = 多少日元</label>
+      <input id="manualRate" type="number" min="1" step="0.01" value="20">
+    </div>
+  </div>
+  <h3 class="section-title" style="margin-top:15px">每个分类的每月消费上限（人民币）</h3>
+  <div class="small">下面六项属于生活费；水电煤气单独计算。旅游不设日常月度上限，也不占用 4000 元预算。</div>
+  <div class="cat-budget-grid" id="categoryBudgetInputs"></div>
+  <div class="small" id="categoryBudgetSum"></div>
+  <button class="add-btn" id="saveSettingsBtn" style="margin-top:12px">保存预算设置</button>
+  <div class="help">预算固定以人民币设定。你可以选择“自动获取每日汇率”，也可以切换成“手动设置汇率”。新增账单会同时保存当时使用的汇率，方便以后回看历史月份。实际银行卡、PayPay 或换汇机构成交汇率可能含手续费或点差，因此自动参考汇率可能与实际成交汇率略有不同。</div>
+</section>
+
+
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>编辑账单</h3>
+      <button class="modal-close" id="closeEditModal">×</button>
+    </div>
+    <input type="hidden" id="editId">
+
+
+    <div class="field">
+      <label for="editAmount">金额（日元）</label>
+      <input id="editAmount" type="number" min="1" step="1">
+    </div>
+
+    <div class="field">
+      <label for="editCategory">分类</label>
+      <select id="editCategory">
+        <option value="餐饮">🍱 餐饮</option>
+        <option value="交通">🚃 交通</option>
+        <option value="日用品">🧴 日用品</option>
+        
+        <option value="娱乐">🎮 娱乐</option>
+        <option value="学习">📚 学习</option>
+        
+        <option value="水电煤气">💡 水电煤气</option>
+        <option value="其他">📌 其他</option><option value="旅游">🧳 旅游</option>
+      </select>
+    </div>
+
+    <div class="field trip-field" id="editTripField">
+      <label for="editTrip">所属旅行</label><select id="editTrip"></select>
+    </div>
+    <div class="field">
+      <label for="editDate">日期和时间</label>
+      <input id="editDate" type="datetime-local">
+    </div>
+
+    <div class="field">
+      <label for="editNote">备注</label>
+      <input id="editNote" type="text" maxlength="40">
+    </div>
+
+    <div class="action-row">
+      <button class="secondary-action" id="cancelEditBtn">取消</button>
+      <button class="add-btn" id="saveEditBtn">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer-tip">账单和最近汇率缓存在当前浏览器。</div>
+</main>
+
+<script>
+const RECORD_KEY="jp_budget_records_v3";
+const SETTINGS_KEY="jp_budget_settings_v2";
+const RATE_KEY="jp_budget_daily_fx_v1";
+const TRIPS_KEY="jp_budget_trips_v1";
+let trips=JSON.parse(localStorage.getItem(TRIPS_KEY)||"[]");
+let records=JSON.parse(localStorage.getItem(RECORD_KEY)||"[]");
+let settings=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{"livingBudgetCny":3000,"utilityBudgetCny":1000,"warnPercent":80,"fxMode":"auto","manualRate":20}');
+let fx=JSON.parse(localStorage.getItem(RATE_KEY)||'null');
+const CATEGORY_DEFAULTS={"餐饮":1200,"交通":300,"日用品":400,"娱乐":300,"学习":400,"其他":400,"水电煤气":1000};
+const CATEGORY_NAMES=["餐饮","交通","日用品","娱乐","学习","其他","水电煤气"];
+const TRAVEL_CATEGORY="旅游";
+function getCatBudget(c){
+  const b=settings.categoryBudgetsCny||{};
+  return Object.prototype.hasOwnProperty.call(b,c) ? Math.max(0,Number(b[c])||0) : CATEGORY_DEFAULTS[c];
+}
+let selectedType="expense";
+let selectedMonthOffset=0;
+let selectedMonthKey="";
+
+const $=id=>document.getElementById(id);
+const amountInput=$("amount"), noteInput=$("note"), categoryEl=$("category"), categoryField=$("categoryField");
+
+$("livingBudgetCny").value=settings.livingBudgetCny;
+$("utilityBudgetCny").value=settings.utilityBudgetCny;
+$("warnPercent").value=settings.warnPercent;
+$("fxMode").value=settings.fxMode||"auto";
+$("manualRate").value=settings.manualRate||20;
+function renderCategoryBudgetInputs(){
+  $("categoryBudgetInputs").innerHTML=CATEGORY_NAMES.map(c=>
+    `<div class="cat-budget-input"><label for="cb_${CATEGORY_NAMES.indexOf(c)}">${c}</label><input id="cb_${CATEGORY_NAMES.indexOf(c)}" type="number" min="0" step="10" value="${getCatBudget(c)}"></div>`).join("");
+  CATEGORY_NAMES.forEach((c,i)=>$("cb_"+i).addEventListener("input",updateCategoryBudgetSum));
+  updateCategoryBudgetSum();
+}
+function updateCategoryBudgetSum(){
+  const sum=CATEGORY_NAMES.filter(c=>c!=="水电煤气").reduce((v,c)=>v+(Number($("cb_"+CATEGORY_NAMES.indexOf(c)).value)||0),0);
+  const limit=Number($("livingBudgetCny").value)||0;
+  const el=$("categoryBudgetSum");
+  el.textContent=`生活费分类上限合计：¥${sum.toLocaleString("zh-CN")} 人民币 / 生活费总预算 ¥${limit.toLocaleString("zh-CN")} 人民币`+(sum>limit?"（已超过总预算，请调整）":"");
+  el.style.color=sum>limit?"#b91c1c":"";
+}
+$("livingBudgetCny").addEventListener("input",updateCategoryBudgetSum);
+renderCategoryBudgetInputs();
+
+const yen=v=>new Intl.NumberFormat("ja-JP",{style:"currency",currency:"JPY",maximumFractionDigits:0}).format(Math.round(v));
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
+function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+function saveRecords(){localStorage.setItem(RECORD_KEY,JSON.stringify(records))}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}
+function saveFx(){localStorage.setItem(RATE_KEY,JSON.stringify(fx))}
+function saveTrips(){localStorage.setItem(TRIPS_KEY,JSON.stringify(trips))}
+function dateText(ts){return new Date(ts).toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"})}
+function sameMonth(ts,d=new Date()){const x=new Date(ts);return x.getFullYear()===d.getFullYear()&&x.getMonth()===d.getMonth()}
+function sameDay(ts,d=new Date()){const x=new Date(ts);return x.getFullYear()===d.getFullYear()&&x.getMonth()===d.getMonth()&&x.getDate()===d.getDate()}
+function daysInMonth(d=new Date()){return new Date(d.getFullYear(),d.getMonth()+1,0).getDate()}
+
+function currentRate(){
+  if((settings.fxMode||"auto")==="manual"){
+    return Number(settings.manualRate)||20;
+  }
+  return fx&&Number(fx.rate)>0?Number(fx.rate):20;
+}
+function syncRateModeUI(){
+  const manual=(settings.fxMode||"auto")==="manual";
+  $("manualRateField").style.display=manual?"block":"none";
+  $("refreshRateBtn").style.display=manual?"none":"inline-block";
+}
+async function updateRate(force=false){
+  if((settings.fxMode||"auto")==="manual"){render();return}
+  const today=localDayKey();
+  if(!force && fx && fx.checkedDay===today && Number(fx.rate)>0){render();return}
+  $("rateMain").textContent="正在获取…";
+  $("rateStatus").textContent="正在连接每日汇率服务";
+  try{
+    const res=await fetch("https://api.frankfurter.dev/v2/rate/cny/jpy",{cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    const rate=Number(data.rate);
+    if(!rate) throw new Error("Invalid rate");
+    fx={rate,sourceDate:data.date||today,checkedDay:today,fetchedAt:Date.now(),fallback:false};
+    saveFx();
+  }catch(err){
+    if(fx && Number(fx.rate)>0){
+      fx={...fx,checkedDay:today,fallback:true};
+      saveFx();
+    }else{
+      fx={rate:20,sourceDate:"备用值",checkedDay:today,fetchedAt:Date.now(),fallback:true,emergency:true};
+      saveFx();
+    }
+  }
+  render();
+}
+
+function setProgress(el,pct){
+  const c=Math.max(0,Math.min(100,pct));el.style.width=c+"%";el.className="progress-bar";
+  if(pct>=100)el.classList.add("danger");else if(pct>=settings.warnPercent)el.classList.add("warn");
+}
+
+function renderRate(){
+  const mode=settings.fxMode||"auto";
+  const rate=currentRate();
+  if(mode==="manual"){
+    $("rateMain").textContent=`1 元人民币 = ${rate.toFixed(3)} 日元`;
+    $("rateStatus").textContent="当前使用你手动设置的汇率。";
+    return;
+  }
+  $("rateMain").textContent=`1 元人民币 ≈ ${rate.toFixed(3)} 日元`;
+  if(!fx){$("rateStatus").textContent="尚未获取网络汇率";return}
+  if(fx.emergency){
+    $("rateStatus").textContent="网络获取失败，暂用备用汇率；联网后请点“刷新汇率”。";
+  }else if(fx.fallback){
+    $("rateStatus").textContent=`今日获取失败，暂用最近成功汇率（汇率日期：${fx.sourceDate}）。`;
+  }else{
+    $("rateStatus").textContent=`汇率日期：${fx.sourceDate} · 今天已自动更新`;
+  }
+}
+function renderBudget(){
+  const rate=currentRate();
+  const livingBudget=(Number(settings.livingBudgetCny)||0)*rate;
+  const utilityBudget=(Number(settings.utilityBudgetCny)||0)*rate;
+  const totalBudget=livingBudget+utilityBudget;
+  const monthExpenseRecords=records.filter(r=>r.type==="expense"&&sameMonth(r.time));
+  const utilitySpent=monthExpenseRecords.filter(r=>r.category==="水电煤气").reduce((s,r)=>s+r.amount,0);
+  const livingSpent=monthExpenseRecords.filter(r=>r.category!=="水电煤气"&&r.category!==TRAVEL_CATEGORY).reduce((s,r)=>s+r.amount,0);
+  const totalSpent=livingSpent+utilitySpent; // 旅游单独统计，不占每月4000元预算
+  const livingPct=livingBudget?livingSpent/livingBudget*100:0;
+  const utilityPct=utilityBudget?utilitySpent/utilityBudget*100:0;
+  const totalPct=totalBudget?totalSpent/totalBudget*100:0;
+
+  $("livingProgressText").textContent=`${yen(livingSpent)} / ${yen(livingBudget)}`;
+  $("utilityProgressText").textContent=`${yen(utilitySpent)} / ${yen(utilityBudget)}`;
+  setProgress($("livingProgress"),livingPct);setProgress($("utilityProgress"),utilityPct);
+
+  const alert=$("budgetAlert");alert.className="alert";let messages=[];
+  if(totalSpent>totalBudget){alert.classList.add("danger");messages.push(`总预算已超支 ${yen(totalSpent-totalBudget)}。`)}
+  else if(totalPct>=settings.warnPercent){alert.classList.add("warn");messages.push(`总预算已使用 ${Math.round(totalPct)}%，请控制后续开支。`)}
+  else messages.push(`本月总预算已使用 ${Math.round(totalPct)}%，目前在预算内。`);
+
+  if(livingSpent>livingBudget){alert.className="alert danger";messages.push(`生活费已超支 ${yen(livingSpent-livingBudget)}。`)}
+  else if(livingPct>=settings.warnPercent){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push(`生活费已使用 ${Math.round(livingPct)}%。`)}
+  if(utilitySpent>utilityBudget){alert.className="alert danger";messages.push(`水电煤气已超支 ${yen(utilitySpent-utilityBudget)}。`)}
+  else if(utilityPct>=settings.warnPercent){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push(`水电煤气已使用 ${Math.round(utilityPct)}%。`)}
+  const catTotalsCurrent={};
+  monthExpenseRecords.filter(r=>r.category!==TRAVEL_CATEGORY).forEach(r=>{const c=CATEGORY_NAMES.includes(r.category)?r.category:"其他";catTotalsCurrent[c]=(catTotalsCurrent[c]||0)+Number(r.amount||0)});
+  const overCats=CATEGORY_NAMES.filter(c=>(catTotalsCurrent[c]||0)>getCatBudget(c)*rate).map(c=>c+"超出 "+yen(catTotalsCurrent[c]-getCatBudget(c)*rate));
+  const warnCats=CATEGORY_NAMES.filter(c=>!overCats.some(t=>t.startsWith(c+"超出"))&&getCatBudget(c)>0&&(catTotalsCurrent[c]||0)/(getCatBudget(c)*rate)*100>=settings.warnPercent);
+  if(overCats.length){alert.className="alert danger";messages.push("分类超支："+overCats.join("、")+"。")}
+  else if(warnCats.length){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push("分类接近上限："+warnCats.join("、")+"。")}
+  alert.textContent=messages.join(" ");
+
+  const now=new Date(),dim=daysInMonth(now),dailyBase=livingBudget/dim;
+  const todayLivingSpent=records.filter(r=>r.type==="expense"&&r.category!=="水电煤气"&&r.category!==TRAVEL_CATEGORY&&sameDay(r.time,now)).reduce((s,r)=>s+r.amount,0);
+  const remainingDays=dim-now.getDate()+1;
+  const remainingLiving=Math.max(0,livingBudget-livingSpent);
+  const adaptiveDaily=remainingDays>0?remainingLiving/remainingDays:0;
+  $("todayRemaining").textContent=yen(adaptiveDaily);
+  $("dailyInfo").textContent=`按今日汇率换算后，本月生活费平均约 ${yen(dailyBase)}/天。今天已花 ${yen(todayLivingSpent)}；上方额度会随剩余预算和剩余天数动态调整。`;
+}
+
+
+
+function pad2(n){return String(n).padStart(2,"0")}
+function currentMonthKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+}
+function parseMonthKey(key){
+  const [y,m]=String(key).split("-").map(Number);
+  return new Date(y,m-1,1);
+}
+function ensureSelectedMonth(){
+  if(!selectedMonthKey) selectedMonthKey=currentMonthKey();
+}
+function selectedMonthDate(){
+  ensureSelectedMonth();
+  return parseMonthKey(selectedMonthKey);
+}
+function isInSelectedMonth(ts){
+  const d=new Date(ts), t=selectedMonthDate();
+  return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth();
+}
+function selectedMonthName(){
+  const t=selectedMonthDate();
+  return `${t.getFullYear()}年${t.getMonth()+1}月`;
+}
+function toLocalDateTimeValue(ts){
+  const d=new Date(ts);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function downloadTextFile(filename, content, mime){
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+}
+
+
+function activeRateForNewRecord(){
+  try{
+    if((settings.fxMode||"auto")==="manual"){
+      return Number(settings.manualRate)||20;
+    }
+    if(fx && Number(fx.rate)>0) return Number(fx.rate);
+  }catch(e){}
+  return 20;
+}
+
+function tripName(id){const t=trips.find(x=>String(x.id)===String(id));return t?t.name:"未分配旅行"}
+function refreshTripSelects(){
+  for(const id of ["travelProject","editTrip"]){
+    const el=$(id),old=el.value;
+    el.innerHTML='<option value="">未分配旅行</option>';
+    trips.forEach(t=>{const o=document.createElement("option");o.value=t.id;o.textContent=t.name;el.appendChild(o)});
+    if([...el.options].some(o=>o.value===old))el.value=old;
+  }
+}
+function updateTripVisibility(){
+  $("travelProjectField").classList.toggle("visible",categoryEl.value===TRAVEL_CATEGORY);
+  $("editTripField").classList.toggle("visible",$("editCategory").value===TRAVEL_CATEGORY);
+}
+function exportTrip(id){
+  const items=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&String(r.tripId||"")===String(id||"")).sort((a,b)=>a.time-b.time);
+  if(!items.length){alert("这个旅行项目还没有记录");return}
+  const rows=[["日期","旅行项目","分类","备注","金额(日元)"]];
+  items.forEach(r=>{const d=new Date(r.time);rows.push([`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`,tripName(r.tripId),r.category,r.note||"",r.amount])});
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=`旅行_${tripName(id).replace(/[\\/:*?"<>|]/g,"_")}.csv`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function renderTrips(){
+  refreshTripSelects();
+  const selected=$("travelProject").value, edited=$("editTrip").value;
+  const box=$("tripPanels");box.innerHTML="";
+  const listed=[...trips.map(t=>({id:t.id,name:t.name})),{id:"",name:"未分配旅行"}];
+  listed.forEach(t=>{
+    const items=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&String(r.tripId||"")===String(t.id));
+    if(t.id===""&&!items.length)return;
+    const total=items.reduce((sum,r)=>sum+Number(r.amount||0),0);
+    const div=document.createElement("div");div.className="trip-panel";
+    const heading=document.createElement("strong");heading.textContent=t.name;div.appendChild(heading);
+    const amount=document.createElement("div");amount.className="trip-amount";amount.textContent=yen(total);div.appendChild(amount);
+    const hint=document.createElement("div");hint.className="small";hint.textContent=`${items.length} 笔 · 跨月份合计 · 不计入生活预算`;div.appendChild(hint);
+    const btn=document.createElement("button");btn.className="secondary-action";btn.style.marginTop="10px";btn.textContent="导出这趟旅行 CSV";btn.onclick=()=>exportTrip(t.id);div.appendChild(btn);
+    box.appendChild(div);
+  });
+  $("travelProject").value=selected;
+  $("editTrip").value=edited;
+  updateTripVisibility();
+}
+function render(){
+  renderRate();
+  renderTrips();
+  const monthExpense=records.filter(r=>r.type==="expense"&&sameMonth(r.time)).reduce((s,r)=>s+r.amount,0);
+  $("monthExpense").textContent=yen(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+  $("travelMonthDash").textContent=yen(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+  renderBudget();
+
+  const nowDash=new Date();
+  const currentMonthExpenseRecords=records.filter(r=>r.type==="expense"&&sameMonth(r.time));
+  const currentLivingRecords=currentMonthExpenseRecords.filter(r=>r.category!=="水电煤气"&&r.category!==TRAVEL_CATEGORY);
+  const todayLiving=currentLivingRecords.filter(r=>sameDay(r.time,nowDash)).reduce((s,r)=>s+Number(r.amount||0),0);
+  const rateDash=activeRateForNewRecord();
+  const livingBudgetDash=(Number(settings.livingBudgetCny)||0)*rateDash;
+  const livingSpentDash=currentLivingRecords.reduce((s,r)=>s+Number(r.amount||0),0);
+  const remainLivingDash=Math.max(0,livingBudgetDash-livingSpentDash);
+  const dimDash=daysInMonth(nowDash);
+  const elapsedDays=Math.max(1,nowDash.getDate());
+  const remainDays=Math.max(1,dimDash-nowDash.getDate()+1);
+  const todaySuggestDash=remainLivingDash/remainDays;
+  const forecastDash=(livingSpentDash/elapsedDays)*dimDash;
+
+  $("todaySpentDash").textContent=yen(todayLiving);
+  $("todayRemainDash").textContent=yen(todaySuggestDash);
+  $("monthLivingRemainDash").textContent=yen(remainLivingDash);
+  $("forecastMonthDash").textContent=yen(forecastDash);
+
+  const forecastNote=$("forecastNote");
+  if(forecastDash>livingBudgetDash){
+    $("forecastMonthDash").className="red";
+    forecastNote.textContent=`按目前速度，预计超出生活费预算 ${yen(forecastDash-livingBudgetDash)}。`;
+  }else{
+    $("forecastMonthDash").className="green";
+    forecastNote.textContent=`按目前速度，预计月底还能剩 ${yen(livingBudgetDash-forecastDash)}。`;
+  }
+
+  ensureSelectedMonth();
+  $("monthPicker").value=selectedMonthKey;
+
+  const monthRecords=records.filter(r=>r.type==="expense"&&isInSelectedMonth(r.time));
+  const monthExpenseSelected=monthRecords.filter(r=>r.type==="expense").reduce((s,r)=>s+r.amount,0);
+  $("selectedMonthLabel").textContent=selectedMonthName();
+  $("selectedMonthExpense").textContent=yen(monthRecords.filter(r=>r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+  $("travelSelectedDash").textContent=yen(monthRecords.filter(r=>r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+
+  const catOrder=["餐饮","交通","日用品","娱乐","学习","水电煤气","其他","旅游"];
+  const catTotals={};
+  monthRecords.filter(r=>r.type==="expense").forEach(r=>{
+    const c=catOrder.includes(r.category)?r.category:"其他";
+    catTotals[c]=(catTotals[c]||0)+Number(r.amount||0);
+  });
+  const catBox=$("categoryBreakdown");
+  catBox.innerHTML="";
+  const rateForCategory=activeRateForNewRecord();
+  catOrder.forEach(c=>{
+    const amount=catTotals[c]||0;
+    const cap=c===TRAVEL_CATEGORY ? null : getCatBudget(c)*rateForCategory;
+    const ratio=c===TRAVEL_CATEGORY ? 0 : cap?amount/cap:amount?Infinity:0;
+    const percentage=Number.isFinite(ratio)?Math.round(ratio*100):100;
+    const row=document.createElement("div");
+    row.className="cat-limit-row";
+    const fillClass=ratio>=1?"danger":ratio>=settings.warnPercent/100?"warn":"";
+    const status=c===TRAVEL_CATEGORY?"不计入日常生活费预算":ratio>1?`<span class="cat-alert over">超支 ${yen(amount-cap)}</span>`:ratio>=settings.warnPercent/100?'<span class="cat-alert">接近上限</span>':'';
+    row.innerHTML=`<div class="cat-limit-header"><strong>${esc(c)}</strong><span>${yen(amount)}${c===TRAVEL_CATEGORY?"（单独统计）":" / "+yen(cap)}</span></div>
+    <div class="progress" style="${c===TRAVEL_CATEGORY?'display:none':''}"><div class="progress-bar ${fillClass}" style="width:${Math.min(100,Math.max(0,percentage))}%"></div></div>
+    <div class="cat-limit-hint">${c===TRAVEL_CATEGORY?"独立旅游支出":"已用 "+(ratio===Infinity?"超过上限":percentage+"%") } ${status}</div>`;
+    catBox.appendChild(row);
+  });
+
+
+  $("recordList").innerHTML="";
+  $("emptyState").style.display=monthRecords.length?"none":"block";
+  [...monthRecords].sort((a,b)=>b.time-a.time).forEach(r=>{
+    const li=document.createElement("li");li.className="record-item";
+    const title=r.note||(r.category||"支出");
+    const fxText=r.fxRateAtEntry?` · 汇率 ${Number(r.fxRateAtEntry).toFixed(2)}`:"";
+    const meta=`${esc(r.category||"其他")}${r.category===TRAVEL_CATEGORY?" · "+esc(tripName(r.tripId)):""} · ${dateText(r.time)}${fxText}`;
+    li.innerHTML=`<div><div class="record-note">${esc(title)}</div><div class="record-meta">${meta}</div></div>
+    <div class="record-right">
+      <div class="record-amount red">-${yen(r.amount)}</div>
+      <div>
+        <button class="edit-btn" data-edit-id="${r.id}">编辑</button>
+        <button class="delete-btn" data-id="${r.id}">删除</button>
+      </div>
+    </div>`;
+    $("recordList").appendChild(li);
+  });
+  document.querySelectorAll(".delete-btn").forEach(btn=>btn.onclick=()=>{records=records.filter(r=>r.id!==Number(btn.dataset.id));saveRecords();render()});
+
+document.querySelectorAll(".edit-btn").forEach(btn=>btn.onclick=()=>{
+  const id=Number(btn.dataset.editId);
+  const r=records.find(x=>x.id===id);
+  if(!r)return;
+  $("editId").value=r.id;
+  $("editAmount").value=r.amount;
+  $("editCategory").value=["餐饮","交通","日用品","娱乐","学习","水电煤气","其他","旅游"].includes(r.category)?r.category:"其他";
+  $("editDate").value=toLocalDateTimeValue(r.time);
+  $("editTrip").value=r.tripId||"";
+  updateTripVisibility();
+  $("editNote").value=r.note||"";
+  $("editModal").classList.add("show");
+});
+
+}
+
+$("addBtn").onclick=()=>{const amount=Math.round(Number(amountInput.value));if(!amount||amount<=0){alert("请输入大于 0 的金额");amountInput.focus();return}
+records.push({id:Date.now(),type:"expense",amount,category:categoryEl.value,tripId:categoryEl.value===TRAVEL_CATEGORY?$("travelProject").value:"",note:noteInput.value.trim(),time:Date.now(),fxRateAtEntry:activeRateForNewRecord()});saveRecords();render();
+const c=categoryEl.value;const spent=records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===c).reduce((sum,r)=>sum+Number(r.amount||0),0);
+const cap=getCatBudget(c)*activeRateForNewRecord();
+if(c!==TRAVEL_CATEGORY && spent>cap)alert(`${c}本月已超过上限 ${yen(spent-cap)}！`);
+else if(c!==TRAVEL_CATEGORY&&cap>0&&spent/cap*100>=settings.warnPercent)alert(`${c}本月已经使用 ${Math.round(spent/cap*100)}% 的预算，请注意。`);
+amountInput.value="";noteInput.value="";amountInput.focus()};
+[amountInput,noteInput].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")$("addBtn").click()}));
+$("clearBtn").onclick=()=>{
+  const monthRecords=records.filter(r=>r.type==="expense"&&isInSelectedMonth(r.time));
+  if(!monthRecords.length)return;
+  if(confirm(`确定清空${selectedMonthName()}的全部记录吗？`)){
+    records=records.filter(r=>r.type!=="expense"||!isInSelectedMonth(r.time));
+    saveRecords();render();
+  }
+};
+$("saveSettingsBtn").onclick=()=>{
+  const livingSum=CATEGORY_NAMES.filter(c=>c!=="水电煤气").reduce((v,c)=>v+Math.max(0,Number($("cb_"+CATEGORY_NAMES.indexOf(c)).value)||0),0);
+  if(livingSum>Number($("livingBudgetCny").value)){alert("生活费各分类的上限之和超过生活费总预算，请先调整后保存。");return}
+
+  settings={
+    livingBudgetCny:Number($("livingBudgetCny").value)||0,
+    utilityBudgetCny:Number($("utilityBudgetCny").value)||0,
+    warnPercent:Math.min(100,Math.max(50,Number($("warnPercent").value)||80)),
+    fxMode:$("fxMode").value,
+    manualRate:Number($("manualRate").value)||20,
+    categoryBudgetsCny:Object.fromEntries(CATEGORY_NAMES.map((c,i)=>[c,Math.max(0,Number($("cb_"+i).value)||0)]))
+  };
+  saveSettings();
+  syncRateModeUI();
+  render();
+  if(settings.fxMode==="auto") updateRate(true);
+  alert("预算设置已保存");
+};
+$("refreshRateBtn").onclick=()=>updateRate(true);
+
+$("monthPicker").onchange=()=>{
+  if($("monthPicker").value){
+    selectedMonthKey=$("monthPicker").value;
+    render();
+  }
+};
+$("jumpCurrentMonthBtn").onclick=()=>{
+  selectedMonthKey=currentMonthKey();
+  render();
+};
+
+
+$("backupJsonBtn").onclick=()=>{
+  const backup={
+    app:"日本生活支出记账",
+    version:1,
+    exportedAt:new Date().toISOString(),
+    records,
+    trips,
+    settings,
+    fx
+  };
+  const d=new Date();
+  downloadTextFile(
+    `记账完整备份_${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}.json`,
+    JSON.stringify(backup,null,2),
+    "application/json;charset=utf-8"
+  );
+};
+
+$("importJsonBtn").onclick=()=>$("importJsonFile").click();
+
+$("importJsonFile").onchange=async(e)=>{
+  const file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+    if(!data || !Array.isArray(data.records)) throw new Error("格式不正确");
+    if(!confirm(`备份中有 ${data.records.length} 条记录。导入后会覆盖当前数据，确定继续吗？`)){
+      e.target.value="";
+      return;
+    }
+    records=data.records;
+    if(Array.isArray(data.trips)) trips=data.trips;
+    saveTrips();
+    if(data.settings) settings=data.settings;
+    if(data.fx) fx=data.fx;
+    saveRecords();saveSettings();saveFx();
+    $("livingBudgetCny").value=settings.livingBudgetCny||3000;
+    $("utilityBudgetCny").value=settings.utilityBudgetCny||1000;
+    $("warnPercent").value=settings.warnPercent||80;
+    $("fxMode").value=settings.fxMode||"auto";
+    $("manualRate").value=settings.manualRate||20;
+    syncRateModeUI();
+    renderCategoryBudgetInputs();
+    render();
+    alert("备份已恢复");
+  }catch(err){
+    alert("导入失败：请选择由本记账软件导出的 JSON 备份文件。");
+  }finally{
+    e.target.value="";
+  }
+};
+
+
+
+$("exportTravelBtn").onclick=()=>{
+  const items=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&isInSelectedMonth(r.time)).sort((a,b)=>a.time-b.time);
+  if(!items.length){alert(`${selectedMonthName()}没有旅游支出记录`);return}
+  const rows=[["日期","旅行项目","分类","备注","金额(日元)"]];
+  items.forEach(r=>{
+    const d=new Date(r.time);
+    const dt=`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    rows.push([dt,tripName(r.tripId),r.category,r.note||"",r.amount]);
+  });
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a"), t=selectedMonthDate();
+  a.href=url;a.download=`旅游支出_${t.getFullYear()}-${pad2(t.getMonth()+1)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
+$("exportMonthBtn").onclick=()=>{
+  const monthRecords=records.filter(r=>r.type==="expense"&&isInSelectedMonth(r.time)).sort((a,b)=>a.time-b.time);
+  if(!monthRecords.length){
+    alert(`${selectedMonthName()}没有可导出的记录`);
+    return;
+  }
+  const rows=[["日期","旅行项目","分类","备注","金额(日元)"]];
+  monthRecords.forEach(r=>{
+    const d=new Date(r.time);
+    const dt=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    rows.push([dt,r.category===TRAVEL_CATEGORY?tripName(r.tripId):"",r.category||"其他",r.note||"",r.amount]);
+  });
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const t=selectedMonthDate();
+  a.href=url;
+  a.download=`记账_${t.getFullYear()}-${pad2(t.getMonth()+1)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
+$("addTripBtn").onclick=()=>{
+  const name=$("newTripName").value.trim();
+  if(!name){alert("请输入旅行名称");return}
+  if(trips.some(t=>t.name===name)){alert("这个旅行项目已经存在");return}
+  const id=`trip_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+  trips.push({id,name});saveTrips();render();$("travelProject").value=id;$("newTripName").value="";
+};
+categoryEl.addEventListener("change",updateTripVisibility);
+$("editCategory").addEventListener("change",updateTripVisibility);
+$("fxMode").onchange=()=>{settings.fxMode=$("fxMode").value;syncRateModeUI();render();};
+syncRateModeUI();
+
+
+function closeEditModal(){$("editModal").classList.remove("show")}
+$("closeEditModal").onclick=closeEditModal;
+$("cancelEditBtn").onclick=closeEditModal;
+$("editModal").onclick=(e)=>{if(e.target===$("editModal"))closeEditModal()};
+$("saveEditBtn").onclick=()=>{
+  const id=Number($("editId").value);
+  const idx=records.findIndex(r=>r.id===id);
+  if(idx<0)return;
+  const amount=Math.round(Number($("editAmount").value));
+  const dateValue=$("editDate").value;
+  if(!amount || amount<=0){alert("请输入正确金额");return}
+  if(!dateValue){alert("请选择日期和时间");return}
+  records[idx]={
+    ...records[idx],
+    type:"expense",
+    amount,
+    category:$("editCategory").value,
+    tripId:$("editCategory").value===TRAVEL_CATEGORY?$("editTrip").value:"",
+    note:$("editNote").value.trim(),
+    time:new Date(dateValue).getTime(),
+    fxRateAtEntry:records[idx].fxRateAtEntry||activeRateForNewRecord()
+  };
+  saveRecords();
+  closeEditModal();
+  render();
+};
+
+
+render();
+updateRate(false);
+setTimeout(()=>amountInput.focus(),250);
+</script>
+</body>
+</html>
