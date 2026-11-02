@@ -124,7 +124,47 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 .smart-entry{padding:13px;border:1px solid #dbe4f0;background:#f8fafc;border-radius:14px;margin-bottom:13px}
 .smart-entry textarea{width:100%;border:1px solid #d5dce5;background:white;border-radius:12px;resize:vertical;font:inherit;font-size:16px;padding:12px;line-height:1.5;margin:6px 0 9px}
 .smart-entry .secondary-action{margin:0 0 8px;background:#e8edf6}
-.dual-secondary{font-size:12px;color:#64748b;font-weight:600;margin-top:3px}.dual-note{font-size:11px;color:#94a3b8;margin-top:2px}</style>
+.dual-secondary{font-size:12px;color:#64748b;font-weight:600;margin-top:3px}.dual-note{font-size:11px;color:#94a3b8;margin-top:2px}
+/* Burgundy mobile redesign */
+:root{--bg:#fbf6f5;--card:#fffdfc;--text:#3a2025;--muted:#886e73;--line:#f1dfe1;--green:#386d50;--red:#8e152b;--orange:#a85c22;--accent:#841a2e;--blue:#922d40;--radius:23px}
+body{background:linear-gradient(180deg,#fff9f8 0,#faf1f0 450px,#fbf6f5 100%);color:var(--text)}
+.app{max-width:560px;padding:20px 15px calc(45px + env(safe-area-inset-bottom))}
+h1{color:#761328;font-size:26px;letter-spacing:.3px;margin:12px 3px 23px}
+.card{background:#fffdfd;border:1px solid #f6eaea;border-radius:24px;box-shadow:0 7px 24px rgba(103,29,44,.065)}
+.summary,.budget,.form-card,.records,.settings{padding:21px;margin-bottom:17px}
+.tab-nav{background:rgba(251,246,245,.95);border-color:#efdbdf;gap:4px;padding:10px 0 14px;top:0}
+.tab-control{color:#7f3442;gap:6px;border-radius:17px;padding:12px 3px;font-size:12px}
+.tab-control .tab-icon{font-size:21px;line-height:22px}
+.tab-control.active{background:linear-gradient(145deg,#9d243b,#701027);color:#fff;box-shadow:0 5px 15px rgba(112,16,39,.18)}
+.section-title{font-size:18px;color:#5e1425;margin-bottom:16px}
+.small,.forecast-note,.record-meta,.help,.rate-status{line-height:1.6}
+.balance{color:#83182d;font-size:30px;line-height:1.45;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;margin:10px 0 14px}
+.summary>.dash-card{margin-top:17px!important;padding:18px;background:#fdf1f1}
+.dashboard-grid{grid-template-columns:1fr;gap:11px;margin-top:16px}
+.dash-card{background:#fcf2f2;border:1px solid #f8eaea;border-radius:18px;padding:18px 19px}
+.dash-card span{font-size:14px;color:#785a61;margin-bottom:9px}
+.dash-card strong{font-size:23px;line-height:1.35;overflow-wrap:anywhere}
+.dual-secondary{display:block;margin-top:5px;font-size:14px;font-weight:600;color:#a0525f}
+.dual-stack .jpy-line{display:block;color:#7a152b;font-weight:800;line-height:1.3}
+.dual-stack .cny-line{display:block;font-size:.58em;color:#a04b5c;font-weight:650;line-height:1.5;margin-top:5px}
+.balance.dual-stack .cny-line{font-size:16px}
+.dash-card strong.dual-stack{font-size:22px}
+.progress{background:#f5e6e8;height:10px}.progress-bar{background:#8e3145}.progress-bar.warn{background:#ba7d3c}.progress-bar.danger{background:#a12d3f}
+.alert{background:#f9eef0;color:#6e3540;border-radius:17px;line-height:1.7;padding:16px}
+.alert.warn{background:#fff4e9;color:#915624}.alert.danger{background:#fff0f1;color:#8e152b}
+.daily-box,.rate-box,.stat{background:#fbf3f3;border-radius:16px;padding:16px}
+.daily-main{font-size:23px;line-height:1.5;overflow-wrap:anywhere}
+.month-summary,.settings-grid,.action-row{grid-template-columns:1fr}
+.category-row{grid-template-columns:1fr;gap:6px;padding:13px 0;border-bottom:1px solid #f5e8ea}
+.category-value{white-space:normal;line-height:1.5}
+.record-item{grid-template-columns:1fr;gap:6px}.record-right{text-align:left}.record-amount{font-size:20px}
+.add-btn{background:#85162e;border-radius:15px;padding:15px}
+.secondary-btn,.secondary-action,.export-btn{background:#f6e8eb;color:#74243a;border-radius:13px}
+input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
+.cat-limit-header{gap:10px;flex-wrap:wrap}.cat-limit-header span{white-space:normal!important;overflow-wrap:anywhere}
+@media(max-width:390px){.grid3{grid-template-columns:1fr}.grid3 .stat:last-child{grid-column:auto}}
+
+</style>
 </head>
 <body>
 <main class="app">
@@ -433,7 +473,13 @@ function cnyOfRecord(r){
   if(r.originalCurrency==="CNY"&&r.originalAmount!==undefined&&r.originalAmount!==null&&Number.isFinite(Number(r.originalAmount)))return Number(r.originalAmount);
   return Number(r.amount||0)/recordRate(r);
 }
-function dualTotalText(jpy){return `${yen(jpy)} / 约 ${yuan(jpy/activeRateForNewRecord())} 人民币`}
+function dualTotalText(jpy){return `${yen(jpy)} 日元 / 约 ${yuan(jpy/activeRateForNewRecord())} 人民币`}
+function dualPlain(jpy){return `${yen(jpy)} 日元（约 ${yuan(jpy/activeRateForNewRecord())} 人民币）`}
+function setDualMetric(id,jpy){
+ const el=$(id); if(!el)return;
+ el.classList.add('dual-stack');
+ el.innerHTML=`<span class="jpy-line">${yen(jpy)} 日元</span><span class="cny-line">约 ${yuan(jpy/activeRateForNewRecord())} 人民币</span>`;
+}
 function exportCurrencyCells(r){return [Number(r.amount||0),Number(cnyOfRecord(r).toFixed(2)),r.originalCurrency||"JPY",r.originalAmount??r.amount,Number(recordRate(r).toFixed(5))]}
 const esc=s=>String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[ch]));
 function localDayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -520,22 +566,22 @@ function renderBudget(){
   const utilityPct=utilityBudget?utilitySpent/utilityBudget*100:0;
   const totalPct=totalBudget?totalSpent/totalBudget*100:0;
 
-  $("livingProgressText").textContent=`${yen(livingSpent)} / ${yen(livingBudget)}`;
-  $("utilityProgressText").textContent=`${yen(utilitySpent)} / ${yen(utilityBudget)}`;
+  $("livingProgressText").textContent=`${dualPlain(livingSpent)} / ${dualPlain(livingBudget)}`;
+  $("utilityProgressText").textContent=`${dualPlain(utilitySpent)} / ${dualPlain(utilityBudget)}`;
   setProgress($("livingProgress"),livingPct);setProgress($("utilityProgress"),utilityPct);
 
   const alert=$("budgetAlert");alert.className="alert";let messages=[];
-  if(totalSpent>totalBudget){alert.classList.add("danger");messages.push(`总预算已超支 ${yen(totalSpent-totalBudget)}。`)}
+  if(totalSpent>totalBudget){alert.classList.add("danger");messages.push(`总预算已超支 ${dualPlain(totalSpent-totalBudget)}。`)}
   else if(totalPct>=settings.warnPercent){alert.classList.add("warn");messages.push(`总预算已使用 ${Math.round(totalPct)}%，请控制后续开支。`)}
   else messages.push(`本月总预算已使用 ${Math.round(totalPct)}%，目前在预算内。`);
 
-  if(livingSpent>livingBudget){alert.className="alert danger";messages.push(`生活费已超支 ${yen(livingSpent-livingBudget)}。`)}
+  if(livingSpent>livingBudget){alert.className="alert danger";messages.push(`生活费已超支 ${dualPlain(livingSpent-livingBudget)}。`)}
   else if(livingPct>=settings.warnPercent){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push(`生活费已使用 ${Math.round(livingPct)}%。`)}
-  if(utilitySpent>utilityBudget){alert.className="alert danger";messages.push(`水电煤气已超支 ${yen(utilitySpent-utilityBudget)}。`)}
+  if(utilitySpent>utilityBudget){alert.className="alert danger";messages.push(`水电煤气已超支 ${dualPlain(utilitySpent-utilityBudget)}。`)}
   else if(utilityPct>=settings.warnPercent){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push(`水电煤气已使用 ${Math.round(utilityPct)}%。`)}
   const catTotalsCurrent={};
   monthExpenseRecords.filter(r=>r.category!==TRAVEL_CATEGORY).forEach(r=>{const c=CATEGORY_NAMES.includes(r.category)?r.category:"其他";catTotalsCurrent[c]=(catTotalsCurrent[c]||0)+Number(r.amount||0)});
-  const overCats=CATEGORY_NAMES.filter(c=>(catTotalsCurrent[c]||0)>getCatBudget(c)*rate).map(c=>c+"超出 "+yen(catTotalsCurrent[c]-getCatBudget(c)*rate));
+  const overCats=CATEGORY_NAMES.filter(c=>(catTotalsCurrent[c]||0)>getCatBudget(c)*rate).map(c=>c+"超出 "+dualPlain(catTotalsCurrent[c]-getCatBudget(c)*rate));
   const warnCats=CATEGORY_NAMES.filter(c=>!overCats.some(t=>t.startsWith(c+"超出"))&&getCatBudget(c)>0&&(catTotalsCurrent[c]||0)/(getCatBudget(c)*rate)*100>=settings.warnPercent);
   if(overCats.length){alert.className="alert danger";messages.push("分类超支："+overCats.join("、")+"。")}
   else if(warnCats.length){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push("分类接近上限："+warnCats.join("、")+"。")}
@@ -546,8 +592,8 @@ function renderBudget(){
   const remainingDays=dim-now.getDate()+1;
   const remainingLiving=Math.max(0,livingBudget-livingSpent);
   const adaptiveDaily=remainingDays>0?remainingLiving/remainingDays:0;
-  $("todayRemaining").textContent=yen(adaptiveDaily);
-  $("dailyInfo").textContent=`按今日汇率换算后，本月生活费平均约 ${yen(dailyBase)}/天。今天已花 ${yen(todayLivingSpent)}；上方额度会随剩余预算和剩余天数动态调整。`;
+  setDualMetric("todayRemaining",adaptiveDaily);
+  $("dailyInfo").textContent=`按今日汇率换算后，本月生活费平均约 ${dualPlain(dailyBase)}/天。今天已花 ${dualPlain(todayLivingSpent)}；上方额度会随剩余预算和剩余天数动态调整。`;
 }
 
 
@@ -658,7 +704,7 @@ function renderTrips(){
       const capCny=Number(trips.find(x=>String(x.id)===String(t.id))?.budgetCny)||0;
       const capJpy=capCny*activeRateForNewRecord();
       const status=document.createElement("div");status.className="small";
-      status.textContent=capCny>0?`旅行预算 ${yen(capJpy)} · ${total>capJpy?"已超支 "+yen(total-capJpy):"还剩 "+yen(capJpy-total)}`:"尚未设置旅行预算";
+      status.textContent=capCny>0?`旅行预算 ${dualPlain(capJpy)} · ${total>capJpy?"已超支 "+dualPlain(total-capJpy):"还剩 "+dualPlain(capJpy-total)}`:"尚未设置旅行预算";
       if(capCny>0&&total>capJpy)status.style.color="#b91c1c";
       div.appendChild(status);
       const wrap=document.createElement("div");wrap.className="trip-cap";
@@ -685,7 +731,7 @@ function renderAnalysis(){
  const sum=a=>a.reduce((v,r)=>v+Number(r.amount||0),0);
  const total=sum(thisRecords),previous=sum(prevRecords);
  const travel=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&new Date(r.time).getFullYear()===year&&new Date(r.time).getMonth()===mo-1);
- const stats=[["当月日常",yen(total)],["上月日常",yen(previous)],["增减",(total-previous>=0?"+":"")+yen(total-previous)],["当月旅行（独立）",yen(sum(travel))]];
+ const stats=[["当月日常",dualPlain(total)],["上月日常",dualPlain(previous)],["增减",(total-previous>=0?"+":"")+dualPlain(total-previous)],["当月旅行（独立）",dualPlain(sum(travel))]];
  $("comparisonSummary").innerHTML=stats.map(([name,value])=>`<div class="dash-card"><span>${name}</span><strong>${value}</strong></div>`).join("");
  const cat=$("categoryComparison");cat.innerHTML="";
  CATEGORY_NAMES.forEach(c=>{
@@ -693,7 +739,7 @@ function renderAnalysis(){
   if(!v&&!old)return;
   const row=document.createElement("div");row.className="analysis-item";
   const diff=v-old;
-  row.innerHTML=`<div class="progress-head"><strong>${c}</strong><span>${yen(v)} / 上月 ${yen(old)}</span></div><div class="mini-bar"><div style="width:${Math.round(v/Math.max(1,v,old)*100)}%"></div></div><div class="small">${diff===0?"持平":diff>0?"比上月增加 "+yen(diff):"比上月减少 "+yen(-diff)}</div>`;
+  row.innerHTML=`<div class="progress-head"><strong>${c}</strong><span>${dualPlain(v)} / 上月 ${dualPlain(old)}</span></div><div class="mini-bar"><div style="width:${Math.round(v/Math.max(1,v,old)*100)}%"></div></div><div class="small">${diff===0?"持平":diff>0?"比上月增加 "+yen(diff):"比上月减少 "+yen(-diff)}</div>`;
   cat.appendChild(row);
  });
  if(!cat.children.length)cat.textContent="这两个月都没有日常支出。";
@@ -714,8 +760,8 @@ function render(){
   renderAnalysis();
   renderBackupReminder();
   const monthExpense=records.filter(r=>r.type==="expense"&&sameMonth(r.time)).reduce((s,r)=>s+r.amount,0);
-  $("monthExpense").textContent=dualTotalText(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
-  $("travelMonthDash").textContent=dualTotalText(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+  setDualMetric("monthExpense",records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
+  setDualMetric("travelMonthDash",records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
   renderBudget();
 
   const nowDash=new Date();
@@ -732,18 +778,18 @@ function render(){
   const todaySuggestDash=remainLivingDash/remainDays;
   const forecastDash=(livingSpentDash/elapsedDays)*dimDash;
 
-  $("todaySpentDash").textContent=yen(todayLiving);
-  $("todayRemainDash").textContent=yen(todaySuggestDash);
-  $("monthLivingRemainDash").textContent=yen(remainLivingDash);
-  $("forecastMonthDash").textContent=yen(forecastDash);
+  setDualMetric("todaySpentDash",todayLiving);
+  setDualMetric("todayRemainDash",todaySuggestDash);
+  setDualMetric("monthLivingRemainDash",remainLivingDash);
+  setDualMetric("forecastMonthDash",forecastDash);
 
   const forecastNote=$("forecastNote");
   if(forecastDash>livingBudgetDash){
     $("forecastMonthDash").className="red";
-    forecastNote.textContent=`按目前速度，预计超出生活费预算 ${yen(forecastDash-livingBudgetDash)}。`;
+    forecastNote.textContent=`按目前速度，预计超出生活费预算 ${dualPlain(forecastDash-livingBudgetDash)}。`;
   }else{
     $("forecastMonthDash").className="green";
-    forecastNote.textContent=`按目前速度，预计月底还能剩 ${yen(livingBudgetDash-forecastDash)}。`;
+    forecastNote.textContent=`按目前速度，预计月底还能剩 ${dualPlain(livingBudgetDash-forecastDash)}。`;
   }
 
   ensureSelectedMonth();
@@ -908,9 +954,9 @@ if(c===TRAVEL_CATEGORY){
   const t=trips.find(x=>String(x.id)===String($("travelProject").value));
   const tripCap=(Number(t?.budgetCny)||0)*activeRateForNewRecord();
   const tripSpent=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&String(r.tripId||"")===String(t?.id||"")).reduce((v,r)=>v+Number(r.amount||0),0);
-  if(tripCap>0&&tripSpent>tripCap)notice=`这趟旅行超出预算 ${yen(tripSpent-tripCap)}。`;
+  if(tripCap>0&&tripSpent>tripCap)notice=`这趟旅行超出预算 ${dualPlain(tripSpent-tripCap)}。`;
 }
-if(c!==TRAVEL_CATEGORY && spent>cap)notice=`${c}本月已超支 ${yen(spent-cap)}。`;
+if(c!==TRAVEL_CATEGORY && spent>cap)notice=`${c}本月已超支 ${dualPlain(spent-cap)}。`;
 else if(c!==TRAVEL_CATEGORY&&cap>0&&spent/cap*100>=settings.warnPercent)notice=`${c}本月已使用 ${Math.round(spent/cap*100)}% 的预算。`;
 $("smartResult").textContent=`✅ 账单保存成功，已计入 ${selectedMonthName()}。`+(notice?` ⚠️ ${notice}（仍可继续记账）`:"");
 amountInput.value="";noteInput.value="";setEntryNow();showEntryConversion();amountInput.focus()};
