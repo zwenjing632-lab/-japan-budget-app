@@ -104,13 +104,26 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 .trip-amount{font-size:20px;font-weight:800;margin-top:5px}
 .trip-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 
-.tab-nav{position:sticky;top:0;z-index:15;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;background:#f6f7f9;padding:9px 0 12px;margin-bottom:5px;border-bottom:1px solid #e5e7eb}
+.tab-nav{position:sticky;top:0;z-index:15;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;background:#f6f7f9;padding:9px 0 12px;margin-bottom:5px;border-bottom:1px solid #e5e7eb}
 .tab-control{appearance:none;border:0;border-radius:13px;padding:9px 3px 8px;background:transparent;color:#667085;font-size:13px;font-weight:650;cursor:pointer;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px}
 .tab-control.active{background:#111827;color:white;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .tab-control .tab-icon{font-size:18px;line-height:19px}
 .tab-panel{display:none;min-height:240px}
 .tab-panel.active{display:block}
 .tab-panel>.card{margin-bottom:12px}
+
+.analysis-item{padding:11px 0;border-bottom:1px solid #eee}
+.analysis-item:last-child{border:0}
+.mini-bar{height:9px;background:#e9edf3;border-radius:8px;overflow:hidden;margin:6px 0}
+.mini-bar>div{height:100%;background:#64748b;border-radius:8px}
+.trip-cap{display:flex;gap:8px;align-items:center;margin-top:10px}
+.trip-cap input{max-width:145px;padding:9px;font-size:15px}
+.small-action{padding:9px;background:#e8edf3;color:#111827;width:auto;font-size:12px}
+@media(max-width:380px){.tab-control{font-size:11px;padding:8px 1px}}
+
+.smart-entry{padding:13px;border:1px solid #dbe4f0;background:#f8fafc;border-radius:14px;margin-bottom:13px}
+.smart-entry textarea{width:100%;border:1px solid #d5dce5;background:white;border-radius:12px;resize:vertical;font:inherit;font-size:16px;padding:12px;line-height:1.5;margin:6px 0 9px}
+.smart-entry .secondary-action{margin:0 0 8px;background:#e8edf6}
 </style>
 </head>
 <body>
@@ -120,6 +133,7 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 <button class="tab-control active" type="button" data-tab="overview" aria-selected="true"><span class="tab-icon">◫</span>总览</button>
 <button class="tab-control" type="button" data-tab="ledger" aria-selected="false"><span class="tab-icon">＋</span>记账</button>
 <button class="tab-control" type="button" data-tab="travel" aria-selected="false"><span class="tab-icon">🧳</span>旅行</button>
+<button class="tab-control" type="button" data-tab="analysis" aria-selected="false"><span class="tab-icon">▥</span>分析</button>
 <button class="tab-control" type="button" data-tab="settings" aria-selected="false"><span class="tab-icon">⚙</span>设置</button>
 </nav>
 <div class="tab-panel active" id="tab-overview" role="region" aria-label="收支总览">
@@ -189,7 +203,15 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 <div class="tab-panel" id="tab-ledger" role="region" aria-label="记录与月度账单">
 <section class="card form-card">
   <h2 class="section-title">快速记一笔</h2>
-  <div class="field"><label for="amount">金额（日元）</label><input id="amount" type="number" inputmode="numeric" min="1" step="1" placeholder="例如 980"></div>
+  <div class="smart-entry">
+    <label for="smartInput">智能记账 · 一句话填写</label>
+    <textarea id="smartInput" rows="2" placeholder="例如：昨天午饭980日元 / 今天交通20元 / 京都旅行车票1500日元"></textarea>
+    <button type="button" class="secondary-action" id="smartParseBtn">智能识别并填入</button>
+    <div id="smartResult" class="small" aria-live="polite">识别后请检查金额、币种、日期和分类，再点下面的「保存记录」。</div>
+  </div>
+  <button type="button" class="secondary-btn" id="reuseLastBtn" style="margin-bottom:12px;width:100%">沿用上一笔分类、币种和备注</button>
+  <div class="field"><label for="entryCurrency">消费币种</label><select id="entryCurrency"><option value="JPY">日元 JPY (¥)</option><option value="CNY">人民币 CNY (元)</option></select></div>
+  <div class="field"><label for="amount" id="amountLabel">金额（日元）</label><input id="amount" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如 980"><div class="small" id="entryConverted" style="margin-top:5px">按日元记账</div></div>
   <div class="field" id="categoryField">
     <label for="category">分类</label>
     <select id="category">
@@ -253,9 +275,20 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
     <input id="newTripName" maxlength="40" placeholder="例如 京都旅行、名古屋旅行、胜山滑雪">
   </div>
   <button class="secondary-action" id="addTripBtn">添加旅行项目</button>
-  <div class="trip-panels" id="tripPanels"></div>
+  <div class="small" style="margin-top:10px">每趟旅行可设置独立预算（人民币），不影响每月 4000 元日常预算。</div><div class="trip-panels" id="tripPanels"></div>
   <div class="help" style="margin-top:10px">每趟旅行独立累计，即使跨越两个月也会算在同一项目里。旧旅游账单暂归入「未分配旅行」，可通过编辑账单指定项目。</div>
 </section>
+</div>
+<div class="tab-panel" id="tab-analysis" role="region" aria-label="消费分析">
+<section class="card budget">
+<h2 class="section-title">月度消费对比</h2>
+<div class="small">只统计日常生活费；旅游单独显示，不影响日常预算。</div>
+<div class="month-picker-row"><div class="field"><label for="analysisMonth">对比月份</label><input id="analysisMonth" type="month"></div></div>
+<div id="comparisonSummary" class="dashboard-grid"></div>
+<h3 class="section-title" style="margin-top:18px">各分类与上个月对比</h3>
+<div id="categoryComparison"></div>
+</section>
+<section class="card budget"><h2 class="section-title">每日支出</h2><div class="small">按实际消费日期统计，不含旅游。</div><div id="dailyAnalysis"></div></section>
 </div>
 <div class="tab-panel" id="tab-settings" role="region" aria-label="设置与备份">
 <section class="card settings">
@@ -283,7 +316,7 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
   <button class="add-btn" id="saveSettingsBtn" style="margin-top:12px">保存预算设置</button>
   <div class="help">预算固定以人民币设定。你可以选择“自动获取每日汇率”，也可以切换成“手动设置汇率”。新增账单会同时保存当时使用的汇率，方便以后回看历史月份。实际银行卡、PayPay 或换汇机构成交汇率可能含手续费或点差，因此自动参考汇率可能与实际成交汇率略有不同。</div>
 </section><section class="card settings">
-  <h2 class="section-title">数据备份与恢复</h2>
+  <h2 class="section-title">数据备份与恢复</h2><div class="alert warn" id="backupReminder" style="display:none"></div>
   <div class="help" style="margin-bottom:10px">
     CSV 适合查看账单；JSON 备份会保存全部账单、预算设置和汇率设置，换手机或清除浏览器数据后可用于恢复。
   </div>
@@ -305,8 +338,9 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 
 
     <div class="field">
-      <label for="editAmount">金额（日元）</label>
-      <input id="editAmount" type="number" min="1" step="1">
+      <label for="editCurrency">消费币种</label><select id="editCurrency"><option value="JPY">日元 JPY (¥)</option><option value="CNY">人民币 CNY (元)</option></select>
+      <label for="editAmount" id="editAmountLabel" style="margin-top:10px">金额（日元）</label>
+      <input id="editAmount" type="number" min="0.01" step="any"><div class="small" id="editConverted" style="margin-top:5px"></div>
     </div>
 
     <div class="field">
@@ -352,6 +386,7 @@ const RECORD_KEY="jp_budget_records_v3";
 const SETTINGS_KEY="jp_budget_settings_v2";
 const RATE_KEY="jp_budget_daily_fx_v1";
 const TRIPS_KEY="jp_budget_trips_v1";
+const BACKUP_DATE_KEY="jp_budget_last_backup_date_v1";
 let trips=JSON.parse(localStorage.getItem(TRIPS_KEY)||"[]");
 let records=JSON.parse(localStorage.getItem(RECORD_KEY)||"[]");
 let settings=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{"livingBudgetCny":3000,"utilityBudgetCny":1000,"warnPercent":80,"fxMode":"auto","manualRate":20}');
@@ -438,6 +473,7 @@ async function updateRate(force=false){
     }
   }
   render();
+  showEntryConversion();
 }
 
 function setProgress(el,pct){
@@ -546,6 +582,24 @@ function downloadTextFile(filename, content, mime){
 }
 
 
+function validInputAmount(raw){const x=Number(raw);return Number.isFinite(x)&&x>0?x:null}
+function jpyFromInput(original,currency,rate){return currency==="CNY"?Math.round(original*rate):Math.round(original)}
+function showEntryConversion(){
+  const c=$("entryCurrency").value, rate=activeRateForNewRecord();
+  $("amountLabel").textContent=c==="CNY"?"金额（人民币）":"金额（日元）";
+  const v=validInputAmount(amountInput.value);
+  $("entryConverted").textContent=c==="CNY"?`按当前汇率 1 元 ≈ ${rate.toFixed(3)} 日元${v!==null?"，折合 "+yen(jpyFromInput(v,c,rate)):""}`:"按日元记账";
+}
+function showEditConversion(){
+  const c=$("editCurrency").value, rate=Number($("editModal").dataset.editRate)||activeRateForNewRecord();
+  $("editAmountLabel").textContent=c==="CNY"?"金额（人民币）":"金额（日元）";
+  const v=validInputAmount($("editAmount").value);
+  $("editConverted").textContent=c==="CNY"?`按保存汇率 1 元 ≈ ${rate.toFixed(3)} 日元${v!==null?"，折合 "+yen(jpyFromInput(v,c,rate)):""}`:"按日元记账";
+}
+$("entryCurrency").addEventListener("change",showEntryConversion);
+amountInput.addEventListener("input",showEntryConversion);
+$("editCurrency").addEventListener("change",showEditConversion);
+$("editAmount").addEventListener("input",showEditConversion);
 function activeRateForNewRecord(){
   try{
     if((settings.fxMode||"auto")==="manual"){
@@ -592,6 +646,19 @@ function renderTrips(){
     const heading=document.createElement("strong");heading.textContent=t.name;div.appendChild(heading);
     const amount=document.createElement("div");amount.className="trip-amount";amount.textContent=yen(total);div.appendChild(amount);
     const hint=document.createElement("div");hint.className="small";hint.textContent=`${items.length} 笔 · 跨月份合计 · 不计入生活预算`;div.appendChild(hint);
+    if(t.id!==""){
+      const capCny=Number(trips.find(x=>String(x.id)===String(t.id))?.budgetCny)||0;
+      const capJpy=capCny*activeRateForNewRecord();
+      const status=document.createElement("div");status.className="small";
+      status.textContent=capCny>0?`旅行预算 ${yen(capJpy)} · ${total>capJpy?"已超支 "+yen(total-capJpy):"还剩 "+yen(capJpy-total)}`:"尚未设置旅行预算";
+      if(capCny>0&&total>capJpy)status.style.color="#b91c1c";
+      div.appendChild(status);
+      const wrap=document.createElement("div");wrap.className="trip-cap";
+      const field=document.createElement("input");field.type="number";field.min="0";field.step="100";field.value=capCny;field.setAttribute("aria-label","旅行预算人民币");
+      const save=document.createElement("button");save.className="small-action";save.textContent="保存预算（元）";
+      save.onclick=()=>{const value=Number(field.value);if(!Number.isFinite(value)||value<0){alert("预算不能小于0");return}const trip=trips.find(x=>String(x.id)===String(t.id));if(trip){trip.budgetCny=value;saveTrips();render()}};
+      wrap.append(field,save);div.appendChild(wrap);
+    }
     const btn=document.createElement("button");btn.className="secondary-action";btn.style.marginTop="10px";btn.textContent="导出这趟旅行 CSV";btn.onclick=()=>exportTrip(t.id);div.appendChild(btn);
     box.appendChild(div);
   });
@@ -599,9 +666,45 @@ function renderTrips(){
   $("editTrip").value=edited;
   updateTripVisibility();
 }
+function renderAnalysis(){
+ const picker=$("analysisMonth");if(!picker)return;
+ if(!picker.value)picker.value=currentMonthKey();
+ const [year,mo]=picker.value.split("-").map(Number);
+ if(!year||!mo)return;
+ const thisRecords=records.filter(r=>r.type==="expense"&&r.category!==TRAVEL_CATEGORY&&new Date(r.time).getFullYear()===year&&new Date(r.time).getMonth()===mo-1);
+ const prevDate=new Date(year,mo-2,1);
+ const prevRecords=records.filter(r=>r.type==="expense"&&r.category!==TRAVEL_CATEGORY&&new Date(r.time).getFullYear()===prevDate.getFullYear()&&new Date(r.time).getMonth()===prevDate.getMonth());
+ const sum=a=>a.reduce((v,r)=>v+Number(r.amount||0),0);
+ const total=sum(thisRecords),previous=sum(prevRecords);
+ const travel=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&new Date(r.time).getFullYear()===year&&new Date(r.time).getMonth()===mo-1);
+ const stats=[["当月日常",yen(total)],["上月日常",yen(previous)],["增减",(total-previous>=0?"+":"")+yen(total-previous)],["当月旅行（独立）",yen(sum(travel))]];
+ $("comparisonSummary").innerHTML=stats.map(([name,value])=>`<div class="dash-card"><span>${name}</span><strong>${value}</strong></div>`).join("");
+ const cat=$("categoryComparison");cat.innerHTML="";
+ CATEGORY_NAMES.forEach(c=>{
+  const v=sum(thisRecords.filter(r=>r.category===c)),old=sum(prevRecords.filter(r=>r.category===c));
+  if(!v&&!old)return;
+  const row=document.createElement("div");row.className="analysis-item";
+  const diff=v-old;
+  row.innerHTML=`<div class="progress-head"><strong>${c}</strong><span>${yen(v)} / 上月 ${yen(old)}</span></div><div class="mini-bar"><div style="width:${Math.round(v/Math.max(1,v,old)*100)}%"></div></div><div class="small">${diff===0?"持平":diff>0?"比上月增加 "+yen(diff):"比上月减少 "+yen(-diff)}</div>`;
+  cat.appendChild(row);
+ });
+ if(!cat.children.length)cat.textContent="这两个月都没有日常支出。";
+ const daily=new Map();thisRecords.forEach(r=>{const d=new Date(r.time).getDate();daily.set(d,(daily.get(d)||0)+Number(r.amount||0))});
+ const days=new Date(year,mo,0).getDate(),max=Math.max(1,...daily.values());
+ $("dailyAnalysis").innerHTML=Array.from({length:days},(_,i)=>{const val=daily.get(i+1)||0;return `<div class="analysis-item"><div class="progress-head"><span>${mo}月${i+1}日</span><strong>${yen(val)}</strong></div><div class="mini-bar"><div style="width:${Math.round(val/max*100)}%"></div></div></div>`}).join("");
+}
+function renderBackupReminder(){
+ const el=$("backupReminder");if(!el)return;
+ const last=localStorage.getItem(BACKUP_DATE_KEY);
+ const days=last?Math.floor((Date.now()-new Date(last).getTime())/86400000):Infinity;
+ el.style.display=days>=30?"block":"none";
+ el.textContent=last?"距离上次完整备份已超过30天，建议导出 JSON 保存到 iCloud 云盘。":"还没有记录完整备份时间。建议先导出 JSON 保存到 iCloud 云盘，之后每月备份一次。";
+}
 function render(){
   renderRate();
   renderTrips();
+  renderAnalysis();
+  renderBackupReminder();
   const monthExpense=records.filter(r=>r.type==="expense"&&sameMonth(r.time)).reduce((s,r)=>s+r.amount,0);
   $("monthExpense").textContent=yen(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
   $("travelMonthDash").textContent=yen(records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
@@ -675,7 +778,8 @@ function render(){
     const li=document.createElement("li");li.className="record-item";
     const title=r.note||(r.category||"支出");
     const fxText=r.fxRateAtEntry?` · 汇率 ${Number(r.fxRateAtEntry).toFixed(2)}`:"";
-    const meta=`${esc(r.category||"其他")}${r.category===TRAVEL_CATEGORY?" · "+esc(tripName(r.tripId)):""} · ${dateText(r.time)}${fxText}`;
+    const originalText=r.originalCurrency==="CNY" && Number.isFinite(Number(r.originalAmount)) ? ` · 原金额 ￥${Number(r.originalAmount).toFixed(2)} 人民币` : "";
+    const meta=`${esc(r.category||"其他")}${r.category===TRAVEL_CATEGORY?" · "+esc(tripName(r.tripId)):""} · ${dateText(r.time)}${originalText}${fxText}`;
     li.innerHTML=`<div><div class="record-note">${esc(title)}</div><div class="record-meta">${meta}</div></div>
     <div class="record-right">
       <div class="record-amount red">-${yen(r.amount)}</div>
@@ -693,7 +797,10 @@ document.querySelectorAll(".edit-btn").forEach(btn=>btn.onclick=()=>{
   const r=records.find(x=>x.id===id);
   if(!r)return;
   $("editId").value=r.id;
-  $("editAmount").value=r.amount;
+  $("editCurrency").value=r.originalCurrency==="CNY"?"CNY":"JPY";
+  $("editAmount").value=r.originalCurrency==="CNY"&&Number.isFinite(Number(r.originalAmount))?r.originalAmount:r.amount;
+  $("editModal").dataset.editRate=String(r.fxRateAtEntry||activeRateForNewRecord());
+  showEditConversion();
   $("editCategory").value=["餐饮","交通","日用品","娱乐","学习","水电煤气","其他","旅游"].includes(r.category)?r.category:"其他";
   $("editDate").value=toLocalDateTimeValue(r.time);
   $("editTrip").value=r.tripId||"";
@@ -707,20 +814,96 @@ document.querySelectorAll(".edit-btn").forEach(btn=>btn.onclick=()=>{
 function setEntryNow(){$("entryDate").value=toLocalDateTimeValue(Date.now());}
 $("entryNowBtn").onclick=setEntryNow;
 setEntryNow();
-$("addBtn").onclick=()=>{const amount=Math.round(Number(amountInput.value));if(!amount||amount<=0){alert("请输入大于 0 的金额");amountInput.focus();return}
+// 本地关键词识别，不联网、不调用付费 AI；只辅助填表，必须手动确认保存。
+function parseSmartExpense(input){
+  const raw=String(input||'').trim();
+  if(!raw)return {error:'先输入一段消费描述。'};
+  const moneyMatches=[...raw.matchAll(/(?:[¥￥]\s*(\d+(?:\.\d{1,2})?)\s*(元|日元|円|JPY|CNY|人民币)?|(?:人民币|RMB|CNY|日元|円|JPY)?\s*(\d+(?:\.\d{1,2})?)\s*(日元|円|JPY|人民币|元|块|RMB|CNY))/gi)];
+  // 优先显式金额单位，避免把日期中的数字认成金额。
+  let picked=null;
+  for(const m of moneyMatches){
+    const v=Number(m[1]||m[3]);const unit=(m[2]||m[4]||'').toLowerCase();
+    if(Number.isFinite(v)&&v>0 && (unit || /^[¥￥]/.test(m[0]))){picked={match:m[0],amount:v,currency:/人民币|cny|rmb|元|块/.test(unit)?'CNY':'JPY'};break}
+  }
+  if(!picked)return {error:'没有找到带币种的金额，请写「980日元」或「50元」。'};
+  let date=new Date();
+  if(/前天/.test(raw))date.setDate(date.getDate()-2);
+  else if(/昨天|昨日/.test(raw))date.setDate(date.getDate()-1);
+  else {
+    const ymd=raw.match(/(20\d{2})[年\/\-.](\d{1,2})[月\/\-.](\d{1,2})日?/);
+    const md=!ymd&&raw.match(/(?:^|\D)(\d{1,2})月(\d{1,2})日/);
+    if(ymd)date=new Date(+ymd[1],+ymd[2]-1,+ymd[3],date.getHours(),date.getMinutes());
+    else if(md)date=new Date(date.getFullYear(),+md[1]-1,+md[2],date.getHours(),date.getMinutes());
+  }
+  const clock=raw.match(/(?:上午|下午|晚上)?\s*(\d{1,2})[:：](\d{2})/);
+  if(clock){let h=+clock[1];if(/下午|晚上/.test(raw)&&h<12)h+=12;date.setHours(h,+clock[2],0,0)}
+  if(!Number.isFinite(date.getTime())||date.getTime()>Date.now()+60000)return {error:'识别到的日期无效或在未来，请改一下日期。'};
+  let category='其他';
+  const map=[
+    ['水电煤气',/水费|电费|煤气|燃气|瓦斯|ガス|水电/],
+    ['学习',/教材|书本|课本|考试|报名费|文具|打印|学习|学费|簿记/],
+    ['日用品',/洗发|沐浴|纸巾|洗衣|牙膏|日用品|超市用品|卫生巾/],
+    ['交通',/地铁|公交|巴士|电车|出租|打车|车费|车票|交通|新干线|電車|バス/],
+    ['餐饮',/午饭|晚饭|早餐|早饭|饭|餐|咖啡|奶茶|便利店|寿司|拉面|零食|饮料|吃|超市|食堂/],
+    ['娱乐',/电影|游戏|娱乐|演唱会|唱歌|卡拉ok|k歌/]
+  ];
+  for(const [cat,rx] of map)if(rx.test(raw)){category=cat;break}
+  let tripId='';
+  const matchedTrip=trips.find(t=>raw.includes(t.name)||raw.includes(t.name.replace(/旅行|之旅|游玩/g,'')));
+  if(matchedTrip || /旅游|旅行|游玩|京都|名古屋|滑雪|景点|旅馆|酒店/.test(raw)){
+    category='旅游';if(matchedTrip)tripId=String(matchedTrip.id);
+  }
+  const note=raw.replace(picked.match,'').replace(/今天|昨天|前天|昨日|(?:20\d{2})[年\/\-.]\d{1,2}[月\/\-.]\d{1,2}日?|\d{1,2}月\d{1,2}日/g,'').replace(/\d{1,2}[:：]\d{2}/g,'').trim().slice(0,40);
+  return {amount:picked.amount,currency:picked.currency,date,category,tripId,note};
+}
+$("smartParseBtn").onclick=()=>{
+  const parsed=parseSmartExpense($("smartInput").value);
+  if(parsed.error){$("smartResult").textContent=parsed.error;return}
+  $("entryCurrency").value=parsed.currency;
+  amountInput.value=parsed.amount;
+  categoryEl.value=parsed.category;
+  $("entryDate").value=toLocalDateTimeValue(parsed.date.getTime());
+  $("travelProject").value=parsed.tripId;
+  noteInput.value=parsed.note;
+  updateTripVisibility();showEntryConversion();
+  $("smartResult").textContent=`识别完成：${parsed.amount} ${parsed.currency==='CNY'?'元':'日元'} · ${parsed.category} · ${dateText(parsed.date.getTime())}。请核对后点击「保存记录」。`;
+};
+
+$("reuseLastBtn").onclick=()=>{
+ const last=[...records].filter(r=>r.type==="expense").sort((a,b)=>b.time-a.time)[0];
+ if(!last){alert("还没有历史支出");return}
+ $("entryCurrency").value=last.originalCurrency||"JPY";
+ categoryEl.value=last.category||"餐饮";
+ $("travelProject").value=last.tripId||"";
+ noteInput.value=last.note||"";
+ updateTripVisibility();showEntryConversion();amountInput.focus();
+};
+$("analysisMonth").onchange=renderAnalysis;
+$("addBtn").onclick=()=>{
+const originalAmount=validInputAmount(amountInput.value);
+const originalCurrency=$("entryCurrency").value;
+const rate=activeRateForNewRecord();
+const amount=originalAmount===null?0:jpyFromInput(originalAmount,originalCurrency,rate);
+if(!amount||amount<=0){alert("请输入有效金额（折算后至少 1 日元）");amountInput.focus();return}
 const rawDate=$("entryDate").value;
 const entryTime=new Date(rawDate).getTime();
 if(!rawDate||!Number.isFinite(entryTime)){alert("请选择有效的消费日期和时间");return}
 if(entryTime>Date.now()+60000){alert("消费日期不能晚于现在");return}
-records.push({id:Date.now(),type:"expense",amount,category:categoryEl.value,tripId:categoryEl.value===TRAVEL_CATEGORY?$("travelProject").value:"",note:noteInput.value.trim(),time:entryTime,fxRateAtEntry:activeRateForNewRecord()});saveRecords();
+records.push({id:Date.now(),type:"expense",amount,category:categoryEl.value,tripId:categoryEl.value===TRAVEL_CATEGORY?$("travelProject").value:"",note:noteInput.value.trim(),time:entryTime,fxRateAtEntry:rate,originalCurrency,originalAmount});saveRecords();
 // 录入历史日期时直接跳转到对应月份，方便核对是否保存成功。
 const d=new Date(entryTime);selectedMonthKey=`${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
 render();
 const c=categoryEl.value;const spent=records.filter(r=>r.type==="expense"&&sameMonth(r.time,new Date(entryTime))&&r.category===c).reduce((sum,r)=>sum+Number(r.amount||0),0);
 const cap=getCatBudget(c)*activeRateForNewRecord();
+if(c===TRAVEL_CATEGORY){
+  const t=trips.find(x=>String(x.id)===String($("travelProject").value));
+  const tripCap=(Number(t?.budgetCny)||0)*activeRateForNewRecord();
+  const tripSpent=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&String(r.tripId||"")===String(t?.id||"")).reduce((v,r)=>v+Number(r.amount||0),0);
+  if(tripCap>0&&tripSpent>tripCap)alert(`这趟旅行已经超过预算 ${yen(tripSpent-tripCap)}。`);
+}
 if(c!==TRAVEL_CATEGORY && spent>cap)alert(`${c}本月已超过上限 ${yen(spent-cap)}！`);
 else if(c!==TRAVEL_CATEGORY&&cap>0&&spent/cap*100>=settings.warnPercent)alert(`${c}本月已经使用 ${Math.round(spent/cap*100)}% 的预算，请注意。`);
-amountInput.value="";noteInput.value="";setEntryNow();amountInput.focus()};
+amountInput.value="";noteInput.value="";setEntryNow();showEntryConversion();amountInput.focus()};
 [amountInput,noteInput].forEach(el=>el.addEventListener("keydown",e=>{if(e.key==="Enter")$("addBtn").click()}));
 $("clearBtn").onclick=()=>{
   const monthRecords=records.filter(r=>r.type==="expense"&&isInSelectedMonth(r.time));
@@ -778,6 +961,8 @@ $("backupJsonBtn").onclick=()=>{
     JSON.stringify(backup,null,2),
     "application/json;charset=utf-8"
   );
+  localStorage.setItem(BACKUP_DATE_KEY,new Date().toISOString());
+  renderBackupReminder();
 };
 
 $("importJsonBtn").onclick=()=>$("importJsonFile").click();
@@ -880,9 +1065,12 @@ $("saveEditBtn").onclick=()=>{
   const id=Number($("editId").value);
   const idx=records.findIndex(r=>r.id===id);
   if(idx<0)return;
-  const amount=Math.round(Number($("editAmount").value));
+  const originalAmount=validInputAmount($("editAmount").value);
+  const originalCurrency=$("editCurrency").value;
+  const rate=Number($("editModal").dataset.editRate)||activeRateForNewRecord();
+  const amount=originalAmount===null?0:jpyFromInput(originalAmount,originalCurrency,rate);
   const dateValue=$("editDate").value;
-  if(!amount || amount<=0){alert("请输入正确金额");return}
+  if(!amount || amount<=0){alert("请输入有效金额（折算后至少 1 日元）");return}
   if(!dateValue){alert("请选择日期和时间");return}
   records[idx]={
     ...records[idx],
@@ -892,7 +1080,9 @@ $("saveEditBtn").onclick=()=>{
     tripId:$("editCategory").value===TRAVEL_CATEGORY?$("editTrip").value:"",
     note:$("editNote").value.trim(),
     time:new Date(dateValue).getTime(),
-    fxRateAtEntry:records[idx].fxRateAtEntry||activeRateForNewRecord()
+    fxRateAtEntry:rate,
+    originalCurrency,
+    originalAmount
   };
   saveRecords();
   closeEditModal();
@@ -901,6 +1091,7 @@ $("saveEditBtn").onclick=()=>{
 
 
 render();
+showEntryConversion();
 updateRate(false);
 setTimeout(()=>amountInput.focus(),250);
 </script>
@@ -908,7 +1099,7 @@ setTimeout(()=>amountInput.focus(),250);
 <script>
 (function(){
  function setTab(tab,changeHash){
-  if(!['overview','ledger','travel','settings'].includes(tab))tab='overview';
+  if(!['overview','ledger','travel','analysis','settings'].includes(tab))tab='overview';
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
   document.querySelectorAll('.tab-control').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});
   if(changeHash)history.replaceState(null,'','#'+tab);
