@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f6f7f9">
-<title>日本生活支出记账</title>
+<title>日本生活支出记账 · 圆环分析版</title>
 <style>
 :root{
   --bg:#f6f7f9;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;
@@ -164,6 +164,48 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
 .cat-limit-header{gap:10px;flex-wrap:wrap}.cat-limit-header span{white-space:normal!important;overflow-wrap:anywhere}
 @media(max-width:390px){.grid3{grid-template-columns:1fr}.grid3 .stat:last-child{grid-column:auto}}
 
+
+/* Circular spending summary: burgundy family, with travel excluded */
+.donut-summary{display:flex;flex-direction:column;align-items:center;gap:19px;margin:17px 0 21px}
+.donut-chart{width:min(72vw,252px);height:min(72vw,252px);aspect-ratio:1;border-radius:50%;background:#f2e6e8;display:grid;place-items:center;position:relative;box-shadow:0 8px 23px rgba(110,28,44,.08)}
+.donut-chart::after{content:"";position:absolute;inset:17%;border-radius:50%;background:#fffdfd;box-shadow:inset 0 0 0 1px #f6e8ea}
+.donut-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:67%;text-align:center}
+.donut-center span{font-size:12px;color:#8c6e75}
+.donut-center strong{font-size:18px;line-height:1.2;color:#811b31;overflow-wrap:anywhere}
+.donut-center small{font-size:11px;line-height:1.4;color:#9e4c60}
+.donut-legend{display:grid;grid-template-columns:1fr;gap:10px;width:100%}
+.donut-legend-item{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 13px;border-radius:14px;background:#fbf2f3}
+.donut-legend-dot{width:11px;height:11px;border-radius:100%}
+.donut-legend-name{font-size:13px;font-weight:650;color:#613640}
+.donut-legend-value{text-align:right;line-height:1.4;font-size:12px;color:#85223a;font-weight:750}
+.donut-legend-value small{display:block;color:#9e7280;font-size:11px;font-weight:500}
+.donut-empty{color:#987d84;font-size:13px;text-align:center;padding:10px}
+
+
+/* V4: accessible circular reports, improved hierarchy, generous mobile spacing */
+.visual-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin:16px 0 4px;border-radius:15px;background:#f5e9ec}
+.visual-switch-btn{border:0;border-radius:11px;background:transparent;color:#7a4655;font-size:14px;font-weight:700;padding:11px 6px;cursor:pointer}
+.visual-switch-btn.active{background:#85162e;color:white;box-shadow:0 3px 12px rgba(100,17,42,.14)}
+.donut-legend-item{grid-template-columns:14px minmax(0,1fr) auto;gap:10px;padding:13px;background:#fff9f8;border:1px solid #f1e5e6}
+.donut-legend-dot{width:13px;height:13px;border:1px solid rgba(0,0,0,.13);border-radius:4px}
+.donut-legend-name{font-weight:750;color:#4b2a31}
+.donut-legend-value{font-variant-numeric:tabular-nums}
+.trip-visual{padding:18px 10px;margin:20px 0;border-radius:20px;background:#fff8f7;border:1px solid #f0e4e5}
+.trip-visual .donut-summary{margin-bottom:8px}
+.cat-limit-header{align-items:start}
+.category-amount{text-align:right;font-size:12px;line-height:1.5;max-width:73%}
+.category-amount small{display:block;font-size:11px;color:#947782;font-weight:500}
+.alert strong{display:block;font-size:15px;margin-bottom:6px;color:#7e1931}
+.alert small{display:block;margin-top:9px;opacity:.8}
+.summary>.small:first-child{font-weight:650;font-size:14px}
+.balance.dual-stack .jpy-line{font-size:30px;line-height:1.25}
+.balance.dual-stack .cny-line{font-size:16px;color:#9f5364;margin-top:7px}
+.dash-card{padding:20px 18px}
+.dash-card strong.dual-stack .jpy-line{font-size:23px}
+.dash-card strong.dual-stack .cny-line{font-size:15px}
+.trip-panel{background:#fff8f7;border:1px solid #f0e4e5;padding:18px}
+.trip-amount{font-size:17px;line-height:1.65;overflow-wrap:anywhere}
+@media(max-width:390px){.category-amount{max-width:70%}.donut-legend-item{padding:11px 9px;gap:7px}.donut-legend-value{font-size:11px}}
 </style>
 </head>
 <body>
@@ -235,7 +277,22 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
   </div>
 </section><section class="card budget">
   <h2 class="section-title">当月分类支出</h2>
-  <div class="small">根据当前选择的月份自动统计；旅游不占用生活费预算。</div>
+  <div class="small" id="donutMonthLabel">生活类分类占比（旅游独立计算）。</div>
+  <div class="visual-switch" role="group" aria-label="圆环汇总方式">
+    <button type="button" class="visual-switch-btn active" data-donut-mode="category" aria-pressed="true">分类占比</button>
+    <button type="button" class="visual-switch-btn" data-donut-mode="budget" aria-pressed="false">预算使用</button>
+  </div>
+  <div class="donut-summary">
+    <div class="donut-chart" id="categoryDonut" role="img" aria-label="生活类消费分类占比">
+      <div class="donut-center">
+        <span id="donutCenterLabel">本月生活支出</span>
+        <strong id="donutTotalJpy">¥0 日元</strong>
+        <small id="donutTotalCny">约 0.00 元人民币</small>
+      </div>
+    </div>
+    <div class="donut-legend" id="donutLegend"></div>
+  </div>
+  <div class="small" style="margin-top:12px">各分类预算使用进度</div>
   <div class="category-list" id="categoryBreakdown"></div>
   <div class="small" style="margin-top:10px">进度条按照你为每项设定的月度上限计算；超过上限显示红色。</div>
 </section>
@@ -249,7 +306,7 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
     <button type="button" class="secondary-action" id="smartParseBtn">智能识别并填入</button>
     <div id="smartResult" class="small" aria-live="polite">识别后请检查金额、币种、日期和分类，再点下面的「保存记录」。</div>
   </div>
-  <button type="button" class="secondary-btn" id="reuseLastBtn" style="margin-bottom:12px;width:100%">沿用上一笔分类、币种和备注</button>
+  <button type="button" class="secondary-btn" id="reuseLastBtn" style="margin-bottom:12px;width:100%">沿用上一笔信息</button>
   <div class="field"><label for="entryCurrency">消费币种</label><select id="entryCurrency"><option value="JPY">日元 JPY (¥)</option><option value="CNY">人民币 CNY (元)</option></select></div>
   <div class="field"><label for="amount" id="amountLabel">金额（日元）</label><input id="amount" type="number" inputmode="decimal" min="0.01" step="any" placeholder="例如 980"><div class="small" id="entryConverted" style="margin-top:5px">按日元记账</div></div>
   <div class="field" id="categoryField">
@@ -315,7 +372,18 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
     <input id="newTripName" maxlength="40" placeholder="例如 京都旅行、名古屋旅行、胜山滑雪">
   </div>
   <button class="secondary-action" id="addTripBtn">添加旅行项目</button>
-  <div class="small" style="margin-top:10px">每趟旅行可设置独立预算（人民币），不影响每月 4000 元日常预算。</div><div class="trip-panels" id="tripPanels"></div>
+  <div class="small" style="margin-top:10px">每趟旅行可设置独立预算（人民币），不影响每月 4000 元日常预算。</div>
+  <div class="trip-visual">
+    <h3 class="section-title">旅行费用圆环汇总</h3>
+    <div class="small">按旅行项目汇总全部月份的旅游记录，不计入日常预算。</div>
+    <div class="donut-summary">
+      <div class="donut-chart" id="tripDonut" role="img" aria-label="旅行项目消费占比">
+        <div class="donut-center"><span>旅行支出合计</span><strong id="tripDonutJpy">¥0 日元</strong><small id="tripDonutCny">约 0.00 元人民币</small></div>
+      </div>
+      <div class="donut-legend" id="tripDonutLegend"></div>
+    </div>
+  </div>
+  <div class="trip-panels" id="tripPanels"></div>
   <div class="help" style="margin-top:10px">每趟旅行独立累计，即使跨越两个月也会算在同一项目里。旧旅游账单暂归入「未分配旅行」，可通过编辑账单指定项目。</div>
 </section>
 </div>
@@ -585,7 +653,11 @@ function renderBudget(){
   const warnCats=CATEGORY_NAMES.filter(c=>!overCats.some(t=>t.startsWith(c+"超出"))&&getCatBudget(c)>0&&(catTotalsCurrent[c]||0)/(getCatBudget(c)*rate)*100>=settings.warnPercent);
   if(overCats.length){alert.className="alert danger";messages.push("分类超支："+overCats.join("、")+"。")}
   else if(warnCats.length){if(!alert.classList.contains("danger"))alert.className="alert warn";messages.push("分类接近上限："+warnCats.join("、")+"。")}
-  alert.textContent=messages.join(" ");
+  alert.replaceChildren();
+  const heading=document.createElement("strong");heading.textContent=overCats.length||totalSpent>totalBudget||livingSpent>livingBudget||utilitySpent>utilityBudget?"⚠️ 本月有超支项目":"本月预算状态";
+  const detail=document.createElement("div");detail.textContent=messages.join(" ");
+  const hint=document.createElement("small");hint.textContent="超出预算仍可继续记账，不会拦截保存。";
+  alert.append(heading,detail,hint);
 
   const now=new Date(),dim=daysInMonth(now),dailyBase=livingBudget/dim;
   const todayLivingSpent=records.filter(r=>r.type==="expense"&&r.category!=="水电煤气"&&r.category!==TRAVEL_CATEGORY&&sameDay(r.time,now)).reduce((s,r)=>s+r.amount,0);
@@ -687,7 +759,42 @@ function exportTrip(id){
   a.href=url;a.download=`旅行_${tripName(id).replace(/[\\/:*?"<>|]/g,"_")}.csv`;
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+let donutMode='category';
+const tripRingColors=['#85162e','#187f7b','#e0a132','#536bb0','#8462aa','#d07741','#596674','#ad4767'];
+function renderRing(node,segments,total){
+  if(total<=0){node.style.background='#f2e6e8';return;}
+  let cumulative=0;
+  node.style.background='conic-gradient('+segments.map((p,i)=>{
+    const start=cumulative; cumulative+=p.amount/total*100;
+    return `${p.color} ${start.toFixed(4)}% ${(i===segments.length-1?100:cumulative).toFixed(4)}%`;
+  }).join(',')+')';
+}
+function appendDonutLegend(container,label,value,color,rate,pct=''){
+  const item=document.createElement('div');item.className='donut-legend-item';
+  const dot=document.createElement('span');dot.className='donut-legend-dot';dot.style.background=color;
+  const title=document.createElement('span');title.className='donut-legend-name';title.textContent=label+(pct?' · '+pct:'');
+  const amount=document.createElement('span');amount.className='donut-legend-value';
+  amount.appendChild(document.createTextNode(yen(value)+' 日元'));
+  const small=document.createElement('small');small.textContent='约 '+yuan(value/rate)+' 人民币';amount.appendChild(small);
+  item.append(dot,title,amount);container.appendChild(item);
+}
+function renderTravelRing(){
+  const ring=$('tripDonut'),list=$('tripDonutLegend');list.replaceChildren();
+  const totalItems=records.filter(r=>r.type==='expense'&&r.category===TRAVEL_CATEGORY);
+  const all=totalItems.reduce((sum,r)=>sum+Number(r.amount||0),0);
+  const rate=activeRateForNewRecord();
+  $('tripDonutJpy').textContent=yen(all)+' 日元';
+  $('tripDonutCny').textContent='约 '+yuan(all/rate)+' 人民币';
+  if(!all){ring.style.background='#f2e6e8';list.innerHTML='<div class="donut-empty">还没有旅行记录</div>';return}
+  const projects=[...trips.map(t=>({id:String(t.id),name:t.name})),{id:'',name:'未分配旅行'}];
+  const parts=projects.map(t=>({...t,amount:totalItems.filter(r=>String(r.tripId||'')===t.id).reduce((sum,r)=>sum+Number(r.amount||0),0)})).filter(t=>t.amount>0);
+  parts.forEach((p,i)=>p.color=tripRingColors[i%tripRingColors.length]);
+  renderRing(ring,parts,all);
+  parts.forEach(p=>appendDonutLegend(list,p.name,p.amount,p.color,rate,Math.round(p.amount/all*100)+'%'));
+  ring.setAttribute('aria-label','旅行项目支出：'+parts.map(p=>p.name+Math.round(p.amount/all*100)+'%').join('，'));
+}
 function renderTrips(){
+  renderTravelRing();
   refreshTripSelects();
   const selected=$("travelProject").value, edited=$("editTrip").value;
   const box=$("tripPanels");box.innerHTML="";
@@ -807,6 +914,43 @@ function render(){
     const c=catOrder.includes(r.category)?r.category:"其他";
     catTotals[c]=(catTotals[c]||0)+Number(r.amount||0);
   });
+  // 当前账单月份的分类支出；旅游独立，不进入生活费圆环。
+  const donutCategories=catOrder.filter(c=>c!==TRAVEL_CATEGORY && (catTotals[c]||0)>0);
+  const totalDonut=donutCategories.reduce((sum,c)=>sum+catTotals[c],0);
+  const donutColors={"餐饮":"#85162e","交通":"#187f7b","日用品":"#e0a132","娱乐":"#536bb0","学习":"#8462aa","水电煤气":"#d07741","其他":"#596674"};
+  const displayRate=activeRateForNewRecord();
+  const donut=$('categoryDonut'),legend=$('donutLegend');
+  legend.replaceChildren();
+  $('donutMonthLabel').textContent=selectedMonthName()+'生活类分类统计（不含旅游）';
+  if(donutMode==='budget'){
+    const maxBudget=(Number(settings.livingBudgetCny)||0)+(Number(settings.utilityBudgetCny)||0);
+    const budgetJpy=maxBudget*displayRate;
+    const percent=budgetJpy>0?totalDonut/budgetJpy*100:0;
+    const consumed=Math.min(100,Math.max(0,percent));
+    const ringColor=percent>100?'#ab1e37':'#85162e';
+    donut.style.background=budgetJpy>0?`conic-gradient(${ringColor} 0% ${consumed}%, #e7dde0 ${consumed}% 100%)`:'#e7dde0';
+    $('donutCenterLabel').textContent=budgetJpy>0?`已使用 ${Math.round(percent)}%`:'尚未设置预算';
+    $('donutTotalJpy').textContent=yen(totalDonut)+' 日元';
+    $('donutTotalCny').textContent='约 '+yuan(totalDonut/displayRate)+' 人民币';
+    const remaining=budgetJpy-totalDonut;
+    appendDonutLegend(legend,'已支出',totalDonut,ringColor,displayRate,Math.round(percent)+'%');
+    appendDonutLegend(legend,remaining<0?'超出预算':'剩余预算',Math.abs(remaining),remaining<0?'#b91c1c':'#a4a4af',displayRate);
+    donut.setAttribute('aria-label',`生活预算已使用${Math.round(percent)}%`);
+  }else if(totalDonut<=0){
+    donut.style.background='#f2e6e8';
+    $('donutCenterLabel').textContent='本月生活支出';
+    $('donutTotalJpy').textContent='¥0 日元';
+    $('donutTotalCny').textContent='约 0.00 元人民币';
+    legend.innerHTML='<div class="donut-empty">这个月还没有生活类支出记录</div>';
+  }else{
+    $('donutCenterLabel').textContent='本月生活支出';
+    $('donutTotalJpy').textContent=yen(totalDonut)+' 日元';
+    $('donutTotalCny').textContent='约 '+yuan(totalDonut/displayRate)+' 人民币';
+    const portions=donutCategories.map(c=>({name:c,amount:catTotals[c],color:donutColors[c]}));
+    renderRing(donut,portions,totalDonut);
+    portions.forEach(p=>appendDonutLegend(legend,p.name,p.amount,p.color,displayRate,Math.round(p.amount/totalDonut*100)+'%'));
+    donut.setAttribute('aria-label',selectedMonthName()+'分类支出：'+portions.map(p=>p.name+Math.round(p.amount/totalDonut*100)+'%').join('，'));
+  }
   const catBox=$("categoryBreakdown");
   catBox.innerHTML="";
   const rateForCategory=activeRateForNewRecord();
@@ -818,8 +962,8 @@ function render(){
     const row=document.createElement("div");
     row.className="cat-limit-row";
     const fillClass=ratio>=1?"danger":ratio>=settings.warnPercent/100?"warn":"";
-    const status=c===TRAVEL_CATEGORY?"不计入日常生活费预算":ratio>1?`<span class="cat-alert over">超支 ${yen(amount-cap)}</span>`:ratio>=settings.warnPercent/100?'<span class="cat-alert">接近上限</span>':'';
-    row.innerHTML=`<div class="cat-limit-header"><strong>${esc(c)}</strong><span>${yen(amount)}${c===TRAVEL_CATEGORY?"（单独统计）":" / "+yen(cap)}</span></div>
+    const status=c===TRAVEL_CATEGORY?"不计入日常生活费预算":ratio>1?`<span class="cat-alert over">超支 ${dualPlain(amount-cap)}</span>`:ratio>=settings.warnPercent/100?'<span class="cat-alert">接近上限</span>':'';
+    row.innerHTML=`<div class="cat-limit-header"><strong>${esc(c)}</strong><span class="category-amount">${dualPlain(amount)}${c===TRAVEL_CATEGORY?"（单独统计）":"<small>上限："+dualPlain(cap)+"</small>"}</span></div>
     <div class="progress" style="${c===TRAVEL_CATEGORY?'display:none':''}"><div class="progress-bar ${fillClass}" style="width:${Math.min(100,Math.max(0,percentage))}%"></div></div>
     <div class="cat-limit-hint">${c===TRAVEL_CATEGORY?"独立旅游支出":"已用 "+(ratio===Infinity?"超过上限":percentage+"%") } ${status}</div>`;
     catBox.appendChild(row);
@@ -1146,6 +1290,20 @@ $("saveEditBtn").onclick=()=>{
 };
 
 
+// 打开时自动预选上一笔使用的币种与分类，减少连续记账的重复操作。
+const previousExpense=[...records].filter(r=>r.type==='expense').sort((a,b)=>b.time-a.time)[0];
+if(previousExpense){
+  $('entryCurrency').value=previousExpense.originalCurrency==='CNY'?'CNY':'JPY';
+  if([...categoryEl.options].some(o=>o.value===previousExpense.category))categoryEl.value=previousExpense.category;
+}
+updateTripVisibility();
+document.querySelectorAll('[data-donut-mode]').forEach(button=>button.addEventListener('click',()=>{
+  donutMode=button.dataset.donutMode;
+  document.querySelectorAll('[data-donut-mode]').forEach(b=>{
+    const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));
+  });
+  render();
+}));
 render();
 showEntryConversion();
 updateRate(false);
@@ -1159,6 +1317,7 @@ setTimeout(()=>amountInput.focus(),250);
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
   document.querySelectorAll('.tab-control').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});
   if(changeHash)history.replaceState(null,'','#'+tab);
+  if(tab==='ledger' && changeHash){setTimeout(()=>document.getElementById('amount').focus({preventScroll:true}),80);}
   window.scrollTo({top:0,behavior:'instant'});
  }
  document.querySelectorAll('.tab-control').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab,true)));
