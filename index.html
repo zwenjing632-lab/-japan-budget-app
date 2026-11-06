@@ -112,7 +112,23 @@ input,select{width:100%;border:1px solid var(--line);background:#fff;color:var(-
 .tab-panel.active{display:block}
 .tab-panel>.card{margin-bottom:12px}
 
-.analysis-item{padding:11px 0;border-bottom:1px solid #eee}
+
+.analysis-item{padding:14px 0;border-bottom:1px solid #f0e1e4}
+.analysis-head-vertical{display:flex;flex-direction:column;gap:8px}
+.analysis-title{font-size:16px;font-weight:750;color:#5e1425}
+.analysis-amount-stack{display:flex;flex-direction:column;gap:2px;line-height:1.35}
+.analysis-amount-stack .jpy-line{font-size:17px;font-weight:800;color:#6f1830;overflow-wrap:anywhere}
+.analysis-amount-stack .cny-line{font-size:13px;font-weight:650;color:#a05260;overflow-wrap:anywhere}
+.analysis-compare-lines{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.analysis-compare-lines .compare-current,
+.analysis-compare-lines .compare-previous{font-size:13px;line-height:1.45;color:#6d5359}
+.analysis-compare-lines strong{color:#561420;display:block;margin:3px 0 9px 18px}
+.analysis-compare-lines .jpy-line{display:block;font-size:16px;font-weight:800;color:#71172d;line-height:1.35;overflow-wrap:anywhere}
+.analysis-compare-lines .cny-line{display:block;font-size:13px;color:#a05260;line-height:1.4;margin-top:4px;overflow-wrap:anywhere}
+.analysis-diff{margin-top:7px;font-size:13px;line-height:1.55;color:#7e5860}
+.analysis-diff .jpy-line{display:block;font-weight:700;color:#8a1f35;margin-top:5px}
+.analysis-diff .cny-line{display:block;font-size:12px;color:#a26a77;margin-top:2px}
+
 .analysis-item:last-child{border:0}
 .mini-bar{height:9px;background:#e9edf3;border-radius:8px;overflow:hidden;margin:6px 0}
 .mini-bar>div{height:100%;background:#64748b;border-radius:8px}
@@ -603,6 +619,12 @@ function cnyOfRecord(r){
 }
 function dualTotalText(jpy){return `${yen(jpy)} 日元 / 约 ${yuan(jpy/activeRateForNewRecord())} 人民币`}
 function dualPlain(jpy){return `${yen(jpy)} 日元（约 ${yuan(jpy/activeRateForNewRecord())} 人民币）`}
+
+function dualStackHTML(jpy, prefix=''){
+  const sign = prefix || '';
+  return `<span class="jpy-line">${sign}${yen(jpy)} 日元</span><span class="cny-line">约 ${sign}${yuan(jpy/activeRateForNewRecord())} 人民币</span>`;
+}
+
 function setDualMetric(id,jpy){
  const el=$(id); if(!el)return;
  el.classList.add('dual-stack');
@@ -1013,21 +1035,58 @@ function renderAnalysis(){
  const sum=a=>a.reduce((v,r)=>v+Number(r.amount||0),0);
  const total=sum(thisRecords),previous=sum(prevRecords);
  const travel=records.filter(r=>r.type==="expense"&&r.category===TRAVEL_CATEGORY&&new Date(r.time).getFullYear()===year&&new Date(r.time).getMonth()===mo-1);
- const stats=[["当月日常",dualPlain(total)],["上月日常",dualPlain(previous)],["增减",(total-previous>=0?"+":"")+dualPlain(total-previous)],["当月旅行（独立）",dualPlain(sum(travel))]];
- $("comparisonSummary").innerHTML=stats.map(([name,value])=>`<div class="dash-card"><span>${name}</span><strong>${value}</strong></div>`).join("");
+ const diffTotal=total-previous;
+ const stats=[
+   ["当月日常", total],
+   ["上月日常", previous],
+   ["增减", diffTotal],
+   ["当月旅行（独立）", sum(travel)]
+ ];
+ $("comparisonSummary").innerHTML=stats.map(([name,value],idx)=>`
+   <div class="dash-card">
+     <span>${name}</span>
+     <strong class="dual-stack">${dualStackHTML(Math.abs(value), idx===2 ? (value>=0?'+':'-') : '')}</strong>
+   </div>
+ `).join("");
+
  const cat=$("categoryComparison");cat.innerHTML="";
  CATEGORY_NAMES.forEach(c=>{
   const v=sum(thisRecords.filter(r=>r.category===c)),old=sum(prevRecords.filter(r=>r.category===c));
   if(!v&&!old)return;
   const row=document.createElement("div");row.className="analysis-item";
   const diff=v-old;
-  row.innerHTML=`<div class="progress-head"><strong>${c}</strong><span>${dualPlain(v)} / 上月 ${dualPlain(old)}</span></div><div class="mini-bar"><div style="width:${Math.round(v/Math.max(1,v,old)*100)}%"></div></div><div class="small">${diff===0?"持平":diff>0?"比上月增加 "+yen(diff):"比上月减少 "+yen(-diff)}</div>`;
+  row.innerHTML=`
+    <div class="analysis-head-vertical">
+      <div class="analysis-title">${c}</div>
+      <div class="analysis-compare-lines">
+        <div class="compare-current">本月：<strong>${dualStackHTML(v)}</strong></div>
+        <div class="compare-previous">上月：<strong>${dualStackHTML(old)}</strong></div>
+      </div>
+    </div>
+    <div class="mini-bar"><div style="width:${Math.round(v/Math.max(1,v,old)*100)}%"></div></div>
+    <div class="analysis-diff">${
+      diff===0
+        ? '与上月持平'
+        : diff>0
+          ? `比上月增加 ${dualStackHTML(diff)}`
+          : `比上月减少 ${dualStackHTML(-diff)}`
+    }</div>`;
   cat.appendChild(row);
  });
  if(!cat.children.length)cat.textContent="这两个月都没有日常支出。";
+
  const daily=new Map();thisRecords.forEach(r=>{const d=new Date(r.time).getDate();daily.set(d,(daily.get(d)||0)+Number(r.amount||0))});
  const days=new Date(year,mo,0).getDate(),max=Math.max(1,...daily.values());
- $("dailyAnalysis").innerHTML=Array.from({length:days},(_,i)=>{const val=daily.get(i+1)||0;return `<div class="analysis-item"><div class="progress-head"><span>${mo}月${i+1}日</span><strong>${yen(val)}</strong></div><div class="mini-bar"><div style="width:${Math.round(val/max*100)}%"></div></div></div>`}).join("");
+ $("dailyAnalysis").innerHTML=Array.from({length:days},(_,i)=>{
+   const val=daily.get(i+1)||0;
+   return `<div class="analysis-item">
+     <div class="analysis-head-vertical">
+       <div class="analysis-title">${mo}月${i+1}日</div>
+       <div class="analysis-amount-stack">${dualStackHTML(val)}</div>
+     </div>
+     <div class="mini-bar"><div style="width:${Math.round(val/max*100)}%"></div></div>
+   </div>`;
+ }).join("");
 }
 function renderBackupStatus(){
  const el=$('backupStatus');if(!el)return;
