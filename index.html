@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#f6f7f9">
+<meta name="theme-color" content="#751d35">
 <title>日本生活支出记账 · 圆环分析版</title>
 <style>
 :root{
@@ -206,6 +206,42 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
 .trip-panel{background:#fff8f7;border:1px solid #f0e4e5;padding:18px}
 .trip-amount{font-size:17px;line-height:1.65;overflow-wrap:anywhere}
 @media(max-width:390px){.category-amount{max-width:70%}.donut-legend-item{padding:11px 9px;gap:7px}.donut-legend-value{font-size:11px}}
+
+/* High contrast chart palette, clickable breakdowns */
+.donut-chart.interactive-ring{cursor:pointer;touch-action:manipulation}
+.donut-chart.interactive-ring:focus-visible,.donut-legend-item.detail-trigger:focus-visible{outline:3px solid #9b173b;outline-offset:3px}
+.donut-legend-item.detail-trigger{cursor:pointer;transition:background .15s,transform .15s;border-color:#eddadf}
+.donut-legend-item.detail-trigger:active{background:#f3e6e8;transform:scale(.99)}
+.chart-hint{font-size:12px;color:#876371;margin:2px 0 0;text-align:center}
+.detail-overlay{position:fixed;inset:0;z-index:10000;background:rgba(31,11,18,.55);display:none;align-items:end;justify-content:center;padding:12px}
+.detail-overlay.visible{display:flex}
+.detail-sheet{width:min(100%,580px);max-height:83vh;overflow:auto;background:#fffafa;border-radius:22px;padding:18px;box-shadow:0 -10px 50px rgba(35,12,21,.2)}
+.detail-heading{display:flex;gap:12px;align-items:start;justify-content:space-between}
+.detail-heading h3{margin:0;color:#6c1931;font-size:19px}
+.detail-close{background:#f0e2e6;color:#6c1931;border:0;border-radius:12px;padding:9px 14px;cursor:pointer;font-weight:700}
+.detail-totals{background:#f8eff1;border-radius:15px;padding:14px;margin:12px 0;font-weight:750;color:#751c33;line-height:1.6}
+.detail-totals small{display:block;font-size:13px;color:#8b5665;font-weight:500}
+.detail-item{display:flex;gap:10px;justify-content:space-between;align-items:start;padding:12px 3px;border-bottom:1px solid #eedfe3;font-size:13px}
+.detail-item .muted{color:#816977;font-size:12px;margin-top:5px}
+.detail-item .value{font-weight:750;color:#822139;text-align:right;white-space:nowrap}
+
+
+/* Search, trip detail, and backup usability */
+.search-panel{background:#fff8f8;border:1px solid #eedee2;border-radius:16px;padding:14px;margin:12px 0 16px}
+.search-panel .field{margin-bottom:9px}
+.search-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.search-count{font-size:12px;color:#815866;margin:8px 0 2px}
+.trip-detail-panel{border-top:1px solid #ecdce1;margin-top:12px;padding-top:14px}
+.trip-detail-toggle{width:100%;margin-top:10px;background:#f2e3e8;color:#702039;border:0;border-radius:13px;padding:12px;font-size:14px;font-weight:750;cursor:pointer}
+.trip-detail-progress{height:10px;background:#ecdfe3;border-radius:99px;overflow:hidden;margin:10px 0}
+.trip-detail-progress>div{height:100%;background:#9a2547;border-radius:99px}
+.trip-day-row{padding:9px 0;border-bottom:1px solid #f0e3e6}
+.trip-day-row .bar{height:7px;border-radius:10px;background:#f0e5e7;margin-top:5px;overflow:hidden}
+.trip-day-row .bar>div{background:#167f79;height:100%;border-radius:10px}
+.trip-transaction{padding:11px 0;border-bottom:1px solid #eedfe3;display:flex;justify-content:space-between;gap:12px}
+.trip-transaction .record-amount{font-size:15px;margin:0;text-align:right}
+.backup-status{background:#fbf1f3;border:1px solid #eedce1;color:#6e263d;padding:12px;border-radius:14px;font-size:13px;line-height:1.7;margin-bottom:11px}
+@media(max-width:390px){.search-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -290,6 +326,7 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
         <small id="donutTotalCny">约 0.00 元人民币</small>
       </div>
     </div>
+    <div class="chart-hint">点击圆环颜色或下方分类，可查看具体账单</div>
     <div class="donut-legend" id="donutLegend"></div>
   </div>
   <div class="small" style="margin-top:12px">各分类预算使用进度</div>
@@ -358,6 +395,19 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
   </div>
 
   <div class="dash-card" style="margin-bottom:10px"><span>所选月份旅游支出</span><strong id="travelSelectedDash">¥0</strong></div>
+  <div class="search-panel">
+    <div class="section-title" style="margin-bottom:10px">查找本月账单</div>
+    <div class="field"><label for="searchScope">搜索范围</label><select id="searchScope"><option value="month">当前选择的月份</option><option value="all">全部月份</option></select></div>
+    <div class="field"><label for="recordSearch">关键词（备注、分类、旅行名称）</label><input id="recordSearch" type="search" placeholder="例如：便利店、餐饮、京都"></div>
+    <div class="search-grid">
+      <div class="field"><label for="searchMin">最低金额（日元）</label><input id="searchMin" type="number" min="0" placeholder="不限"></div>
+      <div class="field"><label for="searchMax">最高金额（日元）</label><input id="searchMax" type="number" min="0" placeholder="不限"></div>
+      <div class="field"><label for="searchStart">开始日期</label><input id="searchStart" type="date"></div>
+      <div class="field"><label for="searchEnd">结束日期</label><input id="searchEnd" type="date"></div>
+    </div>
+    <button type="button" class="secondary-btn" id="clearSearch" style="width:100%">清除筛选</button>
+    <div class="search-count" id="searchCount" aria-live="polite">显示当前月份全部账单</div>
+  </div>
   <button class="export-btn" id="exportMonthBtn">导出当月全部支出 CSV</button>
   <button class="export-btn" id="exportTravelBtn">单独导出当月旅游 CSV</button>
 
@@ -380,6 +430,7 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
       <div class="donut-chart" id="tripDonut" role="img" aria-label="旅行项目消费占比">
         <div class="donut-center"><span>旅行支出合计</span><strong id="tripDonutJpy">¥0 日元</strong><small id="tripDonutCny">约 0.00 元人民币</small></div>
       </div>
+      <div class="chart-hint">点击圆环颜色或旅行项目，可查看消费明细</div>
       <div class="donut-legend" id="tripDonutLegend"></div>
     </div>
   </div>
@@ -428,6 +479,7 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
   <div class="help" style="margin-bottom:10px">
     CSV 适合查看账单；JSON 备份会保存全部账单、预算设置和汇率设置，换手机或清除浏览器数据后可用于恢复。
   </div>
+  <div id="backupStatus" class="backup-status" aria-live="polite">正在查看备份记录…</div>
   <div class="action-row">
     <button class="secondary-action" id="backupJsonBtn">导出完整备份</button>
     <button class="secondary-action" id="importJsonBtn">导入备份</button>
@@ -760,7 +812,7 @@ function exportTrip(id){
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
 let donutMode='category';
-const tripRingColors=['#85162e','#187f7b','#e0a132','#536bb0','#8462aa','#d07741','#596674','#ad4767'];
+const tripRingColors=['#8b1e3f','#178579','#d59a14','#416dbb','#7952a8','#d26934','#546579','#bd5285'];
 function renderRing(node,segments,total){
   if(total<=0){node.style.background='#f2e6e8';return;}
   let cumulative=0;
@@ -778,6 +830,70 @@ function appendDonutLegend(container,label,value,color,rate,pct=''){
   const small=document.createElement('small');small.textContent='约 '+yuan(value/rate)+' 人民币';amount.appendChild(small);
   item.append(dot,title,amount);container.appendChild(item);
 }
+
+// Tap a ring segment or a legend item to inspect transactions. The chart uses
+// a conic gradient starting at 12 o'clock and fills segments clockwise.
+function showChartDetails(title,items){
+  const overlay=$('chartDetailOverlay'),list=$('chartDetailItems');
+  const sorted=[...items].sort((a,b)=>b.time-a.time);
+  $('chartDetailTitle').textContent=title+' · 消费明细';
+  const total=sorted.reduce((sum,r)=>sum+Number(r.amount||0),0);
+  const rate=activeRateForNewRecord();
+  $('chartDetailTotals').replaceChildren();
+  $('chartDetailTotals').appendChild(document.createTextNode(yen(total)+' 日元'));
+  const secondary=document.createElement('small');
+  secondary.textContent='约 '+yuan(total/rate)+' 人民币 · '+sorted.length+' 笔';
+  $('chartDetailTotals').appendChild(secondary);
+  list.replaceChildren();
+  if(!sorted.length){list.textContent='暂无记录';}
+  sorted.forEach(r=>{
+    const line=document.createElement('div');line.className='detail-item';
+    const left=document.createElement('div'),label=document.createElement('strong');
+    label.textContent=r.note||r.category||'支出';left.appendChild(label);
+    const meta=document.createElement('div');meta.className='muted';meta.textContent=dateText(r.time);
+    left.appendChild(meta);
+    const amount=document.createElement('div');amount.className='value';
+    amount.textContent=yen(Number(r.amount||0))+' 日元';
+    const conv=document.createElement('div');conv.className='muted';
+    const recordRate=Number(r.fxRateAtEntry)||rate;
+    conv.textContent='约 '+yuan(Number(r.amount||0)/recordRate)+' 人民币';amount.appendChild(conv);
+    line.append(left,amount);list.appendChild(line);
+  });
+  overlay.classList.add('visible');document.body.style.overflow='hidden';
+}
+function bindRingDetails(node,segments,total,getItems){
+  node.classList.toggle('interactive-ring',total>0);
+  node.setAttribute('role',total>0?'button':'img');
+  node.setAttribute('tabindex',total>0?'0':'-1');
+  if(total<=0){node.onclick=null;node.onkeydown=null;return;}
+  const open=(index)=>{const p=segments[index];if(p)showChartDetails(p.name,getItems(p));};
+  node.onclick=e=>{
+    // Restrict interactions to the colored ring instead of the text inside.
+    const rect=node.getBoundingClientRect(),dx=e.clientX-(rect.left+rect.width/2),dy=e.clientY-(rect.top+rect.height/2);
+    const radius=Math.sqrt(dx*dx+dy*dy)/(rect.width/2);
+    if(radius<.69||radius>1.05)return;
+    const degree=(Math.atan2(dy,dx)*180/Math.PI+450)%360;
+    const fraction=degree/360;
+    let cumulative=0;
+    for(let i=0;i<segments.length;i++){
+      cumulative+=segments[i].amount/total;
+      if(fraction<=cumulative||i===segments.length-1){open(i);break;}
+    }
+  };
+  node.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(0);}};
+}
+function bindLegendDetails(container,segments,getItems){
+  [...container.querySelectorAll('.donut-legend-item')].forEach((el,i)=>{
+    const part=segments[i];if(!part)return;
+    el.classList.add('detail-trigger');el.tabIndex=0;el.setAttribute('role','button');
+    el.setAttribute('aria-label','查看'+part.name+'消费明细');
+    el.onclick=()=>showChartDetails(part.name,getItems(part));
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};
+  });
+}
+$('chartDetailClose').onclick=()=>{$('chartDetailOverlay').classList.remove('visible');document.body.style.overflow='';};
+$('chartDetailOverlay').onclick=e=>{if(e.target===$('chartDetailOverlay'))$('chartDetailClose').click();};
+
 function renderTravelRing(){
   const ring=$('tripDonut'),list=$('tripDonutLegend');list.replaceChildren();
   const totalItems=records.filter(r=>r.type==='expense'&&r.category===TRAVEL_CATEGORY);
@@ -785,13 +901,58 @@ function renderTravelRing(){
   const rate=activeRateForNewRecord();
   $('tripDonutJpy').textContent=yen(all)+' 日元';
   $('tripDonutCny').textContent='约 '+yuan(all/rate)+' 人民币';
-  if(!all){ring.style.background='#f2e6e8';list.innerHTML='<div class="donut-empty">还没有旅行记录</div>';return}
+  if(!all){ring.style.background='#f2e6e8';list.innerHTML='<div class="donut-empty">还没有旅行记录</div>';bindRingDetails(ring,[],0,()=>[]);return}
   const projects=[...trips.map(t=>({id:String(t.id),name:t.name})),{id:'',name:'未分配旅行'}];
   const parts=projects.map(t=>({...t,amount:totalItems.filter(r=>String(r.tripId||'')===t.id).reduce((sum,r)=>sum+Number(r.amount||0),0)})).filter(t=>t.amount>0);
   parts.forEach((p,i)=>p.color=tripRingColors[i%tripRingColors.length]);
   renderRing(ring,parts,all);
   parts.forEach(p=>appendDonutLegend(list,p.name,p.amount,p.color,rate,Math.round(p.amount/all*100)+'%'));
+  const tripDetailItems=p=>totalItems.filter(r=>String(r.tripId||'')===p.id);
+  bindRingDetails(ring,parts,all,tripDetailItems);
+  bindLegendDetails(list,parts,tripDetailItems);
   ring.setAttribute('aria-label','旅行项目支出：'+parts.map(p=>p.name+Math.round(p.amount/all*100)+'%').join('，'));
+}
+let expandedTripId=null;
+function buildTripDetail(trip,items,total,capJpy){
+ const detail=document.createElement('div');detail.className='trip-detail-panel';
+ const sum=document.createElement('div');sum.className='small';
+ sum.textContent='全部月份共 '+items.length+' 笔 · 总花费 '+dualPlain(total);
+ detail.appendChild(sum);
+ if(capJpy>0){
+   const pct=total/capJpy*100;
+   const progress=document.createElement('div');progress.className='trip-detail-progress';
+   const bar=document.createElement('div');bar.style.width=Math.min(100,pct)+'%';
+   if(pct>100)bar.style.background='#b83242';progress.appendChild(bar);detail.appendChild(progress);
+   const line=document.createElement('div');line.className='small';
+   line.textContent=`已使用旅行预算 ${pct.toFixed(1)}% · ${total>capJpy?'超出 '+dualPlain(total-capJpy):'剩余 '+dualPlain(capJpy-total)}`;
+   detail.appendChild(line);
+ }
+ const title=document.createElement('h4');title.textContent='每日支出';title.style.margin='18px 0 8px';detail.appendChild(title);
+ const byDay=new Map();
+ for(const r of items){const d=new Date(r.time),k=`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;byDay.set(k,(byDay.get(k)||0)+Number(r.amount||0));}
+ const max=Math.max(1,...byDay.values());
+ if(byDay.size===0){const empty=document.createElement('div');empty.className='small';empty.textContent='暂无旅行记录';detail.appendChild(empty)}
+ [...byDay.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([date,value])=>{
+    const row=document.createElement('div');row.className='trip-day-row';
+    const top=document.createElement('div');top.className='progress-head';
+    const d=document.createElement('span');d.textContent=date;
+    const v=document.createElement('strong');v.textContent=dualPlain(value);
+    top.append(d,v);
+    const track=document.createElement('div');track.className='bar';
+    const fill=document.createElement('div');fill.style.width=Math.max(2,Math.round(value/max*100))+'%';track.appendChild(fill);
+    row.append(top,track);detail.appendChild(row);
+ });
+ const itemsTitle=document.createElement('h4');itemsTitle.textContent='消费明细';itemsTitle.style.margin='18px 0 8px';detail.appendChild(itemsTitle);
+ [...items].sort((a,b)=>b.time-a.time).forEach(r=>{
+   const row=document.createElement('div');row.className='trip-transaction';
+   const left=document.createElement('div'),name=document.createElement('strong'),dt=document.createElement('div');
+   name.textContent=r.note||'旅游支出';dt.textContent=dateText(r.time);dt.className='small';left.append(name,dt);
+   const right=document.createElement('div');right.className='record-amount';
+   const primary=document.createElement('div');primary.textContent=yen(Number(r.amount||0))+' 日元';
+   const secondary=document.createElement('div');secondary.className='dual-secondary';secondary.textContent='≈ '+yuan(cnyOfRecord(r))+' 人民币';
+   right.append(primary,secondary);row.append(left,right);detail.appendChild(row);
+ });
+ return detail;
 }
 function renderTrips(){
   renderTravelRing();
@@ -820,6 +981,12 @@ function renderTrips(){
       save.onclick=()=>{const value=Number(field.value);if(!Number.isFinite(value)||value<0){alert("预算不能小于0");return}const trip=trips.find(x=>String(x.id)===String(t.id));if(trip){trip.budgetCny=value;saveTrips();render()}};
       wrap.append(field,save);div.appendChild(wrap);
     }
+    const toggle=document.createElement('button');toggle.className='trip-detail-toggle';toggle.type='button';
+    const isOpen=expandedTripId===String(t.id);toggle.textContent=isOpen?'收起旅行详情':'查看旅行详情';
+    toggle.setAttribute('aria-expanded',isOpen?'true':'false');
+    toggle.onclick=()=>{expandedTripId=isOpen?null:String(t.id);renderTrips()};
+    div.appendChild(toggle);
+    if(isOpen){const budgetYen=t.id!==''?(Number(trips.find(x=>String(x.id)===String(t.id))?.budgetCny)||0)*activeRateForNewRecord():0;div.appendChild(buildTripDetail(t,items,total,budgetYen));}
     const btn=document.createElement("button");btn.className="secondary-action";btn.style.marginTop="10px";btn.textContent="导出这趟旅行 CSV";btn.onclick=()=>exportTrip(t.id);div.appendChild(btn);
     box.appendChild(div);
   });
@@ -854,6 +1021,15 @@ function renderAnalysis(){
  const days=new Date(year,mo,0).getDate(),max=Math.max(1,...daily.values());
  $("dailyAnalysis").innerHTML=Array.from({length:days},(_,i)=>{const val=daily.get(i+1)||0;return `<div class="analysis-item"><div class="progress-head"><span>${mo}月${i+1}日</span><strong>${yen(val)}</strong></div><div class="mini-bar"><div style="width:${Math.round(val/max*100)}%"></div></div></div>`}).join("");
 }
+function renderBackupStatus(){
+ const el=$('backupStatus');if(!el)return;
+ const raw=localStorage.getItem(BACKUP_DATE_KEY);
+ const when=raw?new Date(raw):null;
+ const valid=when&&!Number.isNaN(when.getTime());
+ el.textContent=valid
+   ? '最近发起完整备份：'+when.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'。请确认备份文件已保存到“文件”或 iCloud 云盘。'
+   : '尚无完整备份记录。建议现在导出一次 JSON 文件，并保存到“文件”或 iCloud 云盘。';
+}
 function renderBackupReminder(){
  const el=$("backupReminder");if(!el)return;
  const last=localStorage.getItem(BACKUP_DATE_KEY);
@@ -861,11 +1037,29 @@ function renderBackupReminder(){
  el.style.display=days>=30?"block":"none";
  el.textContent=last?"距离上次完整备份已超过30天，建议导出 JSON 保存到 iCloud 云盘。":"还没有记录完整备份时间。建议先导出 JSON 保存到 iCloud 云盘，之后每月备份一次。";
 }
+function getFilteredMonthRecords(monthRecords){
+ const keyword=String($('recordSearch').value||'').trim().toLocaleLowerCase();
+ const minText=$('searchMin').value.trim(),maxText=$('searchMax').value.trim();
+ const min=minText===''?null:Number(minText), max=maxText===''?null:Number(maxText);
+ const from=$('searchStart').value,to=$('searchEnd').value;
+ return monthRecords.filter(r=>{
+   const searchText=[r.note||'',r.category||'',r.category===TRAVEL_CATEGORY?tripName(r.tripId):''].join(' ').toLocaleLowerCase();
+   if(keyword&&!searchText.includes(keyword))return false;
+   const amount=Number(r.amount||0);
+   if(min!==null&&Number.isFinite(min)&&amount<min)return false;
+   if(max!==null&&Number.isFinite(max)&&amount>max)return false;
+   const d=new Date(r.time),day=`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+   if(from&&day<from)return false;
+   if(to&&day>to)return false;
+   return true;
+ });
+}
 function render(){
   renderRate();
   renderTrips();
   renderAnalysis();
   renderBackupReminder();
+  renderBackupStatus();
   const monthExpense=records.filter(r=>r.type==="expense"&&sameMonth(r.time)).reduce((s,r)=>s+r.amount,0);
   setDualMetric("monthExpense",records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category!==TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
   setDualMetric("travelMonthDash",records.filter(r=>r.type==="expense"&&sameMonth(r.time)&&r.category===TRAVEL_CATEGORY).reduce((sum,r)=>sum+Number(r.amount||0),0));
@@ -917,7 +1111,7 @@ function render(){
   // 当前账单月份的分类支出；旅游独立，不进入生活费圆环。
   const donutCategories=catOrder.filter(c=>c!==TRAVEL_CATEGORY && (catTotals[c]||0)>0);
   const totalDonut=donutCategories.reduce((sum,c)=>sum+catTotals[c],0);
-  const donutColors={"餐饮":"#85162e","交通":"#187f7b","日用品":"#e0a132","娱乐":"#536bb0","学习":"#8462aa","水电煤气":"#d07741","其他":"#596674"};
+  const donutColors={"餐饮":"#8b1e3f","交通":"#178579","日用品":"#d59a14","娱乐":"#416dbb","学习":"#7952a8","水电煤气":"#d26934","其他":"#546579"};
   const displayRate=activeRateForNewRecord();
   const donut=$('categoryDonut'),legend=$('donutLegend');
   legend.replaceChildren();
@@ -935,6 +1129,9 @@ function render(){
     const remaining=budgetJpy-totalDonut;
     appendDonutLegend(legend,'已支出',totalDonut,ringColor,displayRate,Math.round(percent)+'%');
     appendDonutLegend(legend,remaining<0?'超出预算':'剩余预算',Math.abs(remaining),remaining<0?'#b91c1c':'#a4a4af',displayRate);
+    const spentRecords=monthRecords.filter(r=>r.category!==TRAVEL_CATEGORY);
+    bindRingDetails(donut,[{name:'已支出',amount:Math.min(totalDonut,budgetJpy),color:ringColor},{name:'剩余预算',amount:Math.max(0,budgetJpy-totalDonut),color:'#e7dde0'}],Math.max(totalDonut,budgetJpy),()=>spentRecords);
+    bindLegendDetails(legend,[{name:'已支出'},{name:'剩余预算'}],()=>spentRecords);
     donut.setAttribute('aria-label',`生活预算已使用${Math.round(percent)}%`);
   }else if(totalDonut<=0){
     donut.style.background='#f2e6e8';
@@ -942,6 +1139,7 @@ function render(){
     $('donutTotalJpy').textContent='¥0 日元';
     $('donutTotalCny').textContent='约 0.00 元人民币';
     legend.innerHTML='<div class="donut-empty">这个月还没有生活类支出记录</div>';
+    bindRingDetails(donut,[],0,()=>[]);
   }else{
     $('donutCenterLabel').textContent='本月生活支出';
     $('donutTotalJpy').textContent=yen(totalDonut)+' 日元';
@@ -949,6 +1147,9 @@ function render(){
     const portions=donutCategories.map(c=>({name:c,amount:catTotals[c],color:donutColors[c]}));
     renderRing(donut,portions,totalDonut);
     portions.forEach(p=>appendDonutLegend(legend,p.name,p.amount,p.color,displayRate,Math.round(p.amount/totalDonut*100)+'%'));
+    const categoryItems=p=>monthRecords.filter(r=>r.category===p.name);
+    bindRingDetails(donut,portions,totalDonut,categoryItems);
+    bindLegendDetails(legend,portions,categoryItems);
     donut.setAttribute('aria-label',selectedMonthName()+'分类支出：'+portions.map(p=>p.name+Math.round(p.amount/totalDonut*100)+'%').join('，'));
   }
   const catBox=$("categoryBreakdown");
@@ -970,9 +1171,14 @@ function render(){
   });
 
 
+  const searchAll=$('searchScope').value==='all';
+  const searchPool=searchAll?records.filter(r=>r.type==='expense'):monthRecords;
+  const visibleRecords=getFilteredMonthRecords(searchPool);
+  $('searchCount').textContent=`找到 ${visibleRecords.length} 笔记录（${searchAll?'全部月份':'本月'}共 ${searchPool.length} 笔）；导出 CSV 仍只导出选择的月份，不受搜索条件影响。`;
   $("recordList").innerHTML="";
-  $("emptyState").style.display=monthRecords.length?"none":"block";
-  [...monthRecords].sort((a,b)=>b.time-a.time).forEach(r=>{
+  $("emptyState").textContent=searchPool.length?'没有符合条件的账单。':searchAll?'还没有支出记录。':'这个月还没有记录。';
+  $("emptyState").style.display=visibleRecords.length?"none":"block";
+  [...visibleRecords].sort((a,b)=>b.time-a.time).forEach(r=>{
     const li=document.createElement("li");li.className="record-item";
     const title=r.note||(r.category||"支出");
     const fxText=r.fxRateAtEntry?` · 汇率 ${Number(r.fxRateAtEntry).toFixed(2)}`:"";
@@ -1133,6 +1339,8 @@ $("saveSettingsBtn").onclick=()=>{
 };
 $("refreshRateBtn").onclick=()=>updateRate(true);
 
+['searchScope','recordSearch','searchMin','searchMax','searchStart','searchEnd'].forEach(id=>$(id).addEventListener('input',render));
+$('clearSearch').onclick=()=>{['recordSearch','searchMin','searchMax','searchStart','searchEnd'].forEach(id=>$(id).value='');render()};
 $("monthPicker").onchange=()=>{
   if($("monthPicker").value){
     selectedMonthKey=$("monthPicker").value;
@@ -1163,6 +1371,7 @@ $("backupJsonBtn").onclick=()=>{
   );
   localStorage.setItem(BACKUP_DATE_KEY,new Date().toISOString());
   renderBackupReminder();
+  renderBackupStatus();
 };
 
 $("importJsonBtn").onclick=()=>$("importJsonFile").click();
@@ -1325,5 +1534,14 @@ setTimeout(()=>amountInput.focus(),250);
  setTab(location.hash.slice(1),false);
 })();
 </script>
+
+<div class="detail-overlay" id="chartDetailOverlay" role="presentation">
+  <section class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="chartDetailTitle">
+    <div class="detail-heading"><h3 id="chartDetailTitle">消费明细</h3><button type="button" class="detail-close" id="chartDetailClose">关闭</button></div>
+    <div class="detail-totals" id="chartDetailTotals"></div>
+    <div id="chartDetailItems"></div>
+  </section>
+</div>
+
 </body>
 </html>
