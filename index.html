@@ -541,6 +541,14 @@ input,select{border-color:#e8d4d8;border-radius:14px;background:#fff}
 <div class="footer-tip">账单和最近汇率缓存在当前浏览器。</div>
 </main>
 
+<div class="detail-overlay" id="chartDetailOverlay" role="presentation">
+  <section class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="chartDetailTitle">
+    <div class="detail-heading"><h3 id="chartDetailTitle">消费明细</h3><button type="button" class="detail-close" id="chartDetailClose">关闭</button></div>
+    <div class="detail-totals" id="chartDetailTotals"></div>
+    <div id="chartDetailItems"></div>
+  </section>
+</div>
+
 <script>
 const RECORD_KEY="jp_budget_records_v3";
 const SETTINGS_KEY="jp_budget_settings_v2";
@@ -1535,13 +1543,7 @@ setTimeout(()=>amountInput.focus(),250);
 })();
 </script>
 
-<div class="detail-overlay" id="chartDetailOverlay" role="presentation">
-  <section class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="chartDetailTitle">
-    <div class="detail-heading"><h3 id="chartDetailTitle">消费明细</h3><button type="button" class="detail-close" id="chartDetailClose">关闭</button></div>
-    <div class="detail-totals" id="chartDetailTotals"></div>
-    <div id="chartDetailItems"></div>
-  </section>
-</div>
+
 
 </body>
 </html>
